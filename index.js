@@ -261,7 +261,7 @@ client.on(
 
           .setDescription(
 
-            `## 🟡 نورت السيرفر يا ${member}\n\n` +
+            `##  نورت السيرفر يا ${member}\n\n` +
 
             "أهلاً وسهلاً بك في **BARAKAT COMMUNITY** ❤️\n\n" +
 
