@@ -36,7 +36,7 @@ const CONFIG = {
   APPLICATION_PANEL_CHANNEL_ID: "1545950436165550179",
 
   // رابط البانر
-  BANNER_URL: "حط_رابط_البانر_هنا"
+  BANNER_URL: "https://cdn.discordapp.com/banners/1545951349919711282/2744d1c5046464da9883162cb9f01183.webp?size=1024"
 };
 
 // ==============================
