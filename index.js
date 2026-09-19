@@ -140,7 +140,7 @@ client.once("ready", async () => {
     )
 
     .setFooter({
-      text: "BARAKAT COMMUNITY • Streamer Mod"
+      text: "BARAKAT COMMUNITY • MOD KICK"
     })
 
     .setTimestamp();
@@ -164,7 +164,7 @@ client.once("ready", async () => {
       )
 
       .setLabel(
-        "تقديم Streamer Mod"
+        "تقديم MOD KICK"
       )
 
       .setEmoji("🎥")
