@@ -993,7 +993,7 @@ client.on(
 
               "تم **قبول** تقديمك كـ **مقبول  مبدئيا** في:\n" +
 
-              "🟡 **BARAKAT COMMUNITY**\n\n" +
+              "🟡 **MOD KICK**\n\n" +
 
               `👮 **تم قبولك بواسطة:** ${interaction.user.username}\n\n` +
 
@@ -1061,7 +1061,7 @@ client.on(
               )
 
               .setTitle(
-                "❌ رفض Streamer Mod"
+                "❌ رفض MOD KICK"
               );
 
           const reason =
