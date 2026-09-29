@@ -69,7 +69,7 @@ const questions = [
 
   "كم عمرك؟",
 
-  "الخبرة في؟ Kick.",
+  "الخبرة في؟ mod.",
 
   "أازاي تعمل؟ (Timeout) للشخص وامتى تعمل له (Timeout)",
 
@@ -123,9 +123,9 @@ client.once("ready", async () => {
     )
 
     .setDescription(
-      "## 🎥 MOD KICK\n\n" +
+      "## 🎥 MOD \n\n" +
 
-      "هل ترغب في الانضمام إلى فريق **MOD KICK**؟\n\n" +
+      "هل ترغب في الانضمام إلى فريق **MOD **؟\n\n" +
 
       "اضغط على الزر بالأسفل لبدء التقديم.\n\n" +
 
@@ -140,7 +140,7 @@ client.once("ready", async () => {
     )
 
     .setFooter({
-      text: "BARAKAT COMMUNITY • MOD KICK"
+      text: "BARAKAT COMMUNITY • MOD "
     })
 
     .setTimestamp();
@@ -164,7 +164,7 @@ client.once("ready", async () => {
       )
 
       .setLabel(
-        "تقديم MOD KICK"
+        "تقديم  KICK"
       )
 
       .setEmoji("🎥")
@@ -413,7 +413,7 @@ client.on(
 
                 "🎥 **BARAKAT COMMUNITY**\n" +
 
-                "## MOD KICK Application\n\n" +
+                "## MOD  Application\n\n" +
 
                 "أهلًا بك في نموذج التقديم.\n\n" +
 
@@ -597,7 +597,7 @@ client.on(
                 )
 
                 .setTitle(
-                  "📋 طلب MOD KICK جديد"
+                  "📋 طلب MOD  جديد"
                 )
 
                 .setThumbnail(
@@ -993,11 +993,11 @@ client.on(
 
               "تم **قبول** تقديمك كـ **مقبول  مبدئيا** في:\n" +
 
-              "🟡 **MOD KICK**\n\n" +
+              "🟡 **MOD **\n\n" +
 
               `👮 **تم قبولك بواسطة:** ${interaction.user.username}\n\n` +
 
-              "🎭 MOD KICK تم إعطاؤك الرول بنجاح مقبول  مبدئيا استعد لعمل المقابلة للرولا النهاء كا.\n\n" +
+              "🎭 MOD  تم إعطاؤك الرول بنجاح مقبول  مبدئيا استعد لعمل المقابلة للرولا النهاء كا.\n\n" +
 
               "━━━━━━━━━━━━━━━━━━━━"
 
@@ -1061,7 +1061,7 @@ client.on(
               )
 
               .setTitle(
-                "❌ رفض MOD KICK"
+                "❌ رفض MOD "
               );
 
           const reason =
@@ -1223,7 +1223,7 @@ client.on(
 
             "❌ **تم رفض تقديمك**\n\n" +
 
-            "تقديمك كـ **MOD KICK** في:\n" +
+            "تقديمك كـ **MOD ** في:\n" +
 
             "🟡 **BARAKAT COMMUNITY**\n\n" +
 
