@@ -35,7 +35,20 @@ const CONFIG = {
   TICKET_CATEGORY_ID: '1553139841007620267',
   STAFF_ROLE_ID: '1556821008927948810',
 
-  // نفس الصورة المستخدمة في الترحيب و MOD STREAM
+  // =======================================================
+  // ROLE / NOTIFICATION PANEL
+  // =======================================================
+
+  ROLE_PANEL_CHANNEL_ID: '1553152718871466074',
+
+  TIKTOK_ROLE_ID: '1553148704897114242',
+  KICK_ROLE_ID: '1553150118776016966',
+  GAMING_ROLE_ID: '1556822047370510446',
+
+  // =======================================================
+  // BANNER
+  // =======================================================
+
   BANNER_URL:
     'https://cdn.discordapp.com/banners/1545951349919711282/2744d1c5046464da9883162cb9f01183.webp?size=1024'
 };
@@ -436,6 +449,123 @@ async function setupPanels(guild) {
           new ActionRowBuilder()
             .addComponents(menu)
         ]
+      }
+    );
+  }
+
+  // =======================================================
+  // ROLE / NOTIFICATION PANEL
+  // =======================================================
+
+  const rolePanelChannel =
+    guild.channels.cache.get(
+      CONFIG.ROLE_PANEL_CHANNEL_ID
+    );
+
+  if (rolePanelChannel?.isTextBased()) {
+
+    const embed =
+      new EmbedBuilder()
+        .setColor(YELLOW)
+
+        .setTitle(
+          '🔔 اخـتـر إشـعـاراتـك'
+        )
+
+        .setDescription(
+`# 🔔 اخـتـر إشـعـاراتـك
+
+**اختر الإشعارات التي تريد استلامها.**
+
+اضغط مرة لإضافة الرول،
+اضغط مرة أخرى لإزالة الرول.
+
+**اختر الإشعارات التي تريد استلامها بالضغط على الزر المناسب.**
+
+━━━━━━━━━━━━━━━━━━━━
+
+🎵 **TikTok**
+
+لـمـتـابـعـة إشـعـارات الـTikTok اضغط على زر TikTok.
+
+🟢 **Kick**
+
+لـمـتـابـعـة إشـعـارات الـKick اضغط على زر Kick.
+
+🎮 **Gaming**
+
+لـتـصـبـح جـيـمـيـنـج مـعـانـا اضغط على زر Gaming.
+
+━━━━━━━━━━━━━━━━━━━━
+
+**اضغط على الزر المناسب لاختيار رولك.**`
+        )
+
+        .setImage(
+          CONFIG.BANNER_URL
+        )
+
+        .setFooter({
+          text:
+            'BARAKAT_ROLE_PANEL'
+        })
+
+        .setTimestamp();
+
+    const row =
+      new ActionRowBuilder()
+        .addComponents(
+
+          new ButtonBuilder()
+            .setCustomId(
+              'role_tiktok'
+            )
+            .setLabel(
+              'TikTok'
+            )
+            .setEmoji(
+              '🎵'
+            )
+            .setStyle(
+              ButtonStyle.Secondary
+            ),
+
+          new ButtonBuilder()
+            .setCustomId(
+              'role_kick'
+            )
+            .setLabel(
+              'Kick'
+            )
+            .setEmoji(
+              '🟢'
+            )
+            .setStyle(
+              ButtonStyle.Secondary
+            ),
+
+          new ButtonBuilder()
+            .setCustomId(
+              'role_gaming'
+            )
+            .setLabel(
+              'Gaming'
+            )
+            .setEmoji(
+              '🎮'
+            )
+            .setStyle(
+              ButtonStyle.Secondary
+            )
+
+        );
+
+    await panel(
+      rolePanelChannel,
+      'BARAKAT_ROLE_PANEL',
+      {
+        embeds: [embed],
+        components: [row]
       }
     );
   }
@@ -899,7 +1029,6 @@ async function createTicket(
       parent:
         CONFIG.TICKET_CATEGORY_ID,
 
-      // صاحب التذكرة فقط - بدون مستلم في البداية
       topic:
         `ticket:${interaction.user.id}`,
 
@@ -954,6 +1083,7 @@ async function createTicket(
             PermissionsBitField.Flags
               .ManageMessages
           ]
+
         }
 
       ]
@@ -1109,7 +1239,7 @@ client.once(
     );
 
     console.log(
-      '✅ تم تجهيز MOD STREAM + Rules + Tickets.'
+      '✅ تم تجهيز MOD STREAM + Rules + Tickets + Role Panel.'
     );
   }
 );
@@ -1243,6 +1373,130 @@ client.on(
       if (
         interaction.isButton()
       ) {
+
+        // ===================================================
+        // ROLE BUTTONS
+        // ===================================================
+
+        const roleButtons = {
+
+          role_tiktok: {
+            roleId:
+              CONFIG.TIKTOK_ROLE_ID,
+
+            name:
+              'TikTok'
+          },
+
+          role_kick: {
+            roleId:
+              CONFIG.KICK_ROLE_ID,
+
+            name:
+              'Kick'
+          },
+
+          role_gaming: {
+            roleId:
+              CONFIG.GAMING_ROLE_ID,
+
+            name:
+              'Gaming'
+          }
+
+        };
+
+        const selectedRole =
+          roleButtons[
+            interaction.customId
+          ];
+
+        if (selectedRole) {
+
+          const member =
+            interaction.member;
+
+          const role =
+            interaction.guild.roles.cache.get(
+              selectedRole.roleId
+            );
+
+          if (!role) {
+
+            return interaction.reply({
+
+              content:
+                `❌ لم أجد رول **${selectedRole.name}**.`,
+
+              ephemeral:
+                true
+
+            });
+          }
+
+          try {
+
+            // ===============================================
+            // REMOVE ROLE
+            // ===============================================
+
+            if (
+              member.roles.cache.has(
+                role.id
+              )
+            ) {
+
+              await member.roles.remove(
+                role
+              );
+
+              return interaction.reply({
+
+                content:
+                  `🔴 تم إزالة رول **${selectedRole.name}** منك.`,
+
+                ephemeral:
+                  true
+
+              });
+            }
+
+            // ===============================================
+            // ADD ROLE
+            // ===============================================
+
+            await member.roles.add(
+              role
+            );
+
+            return interaction.reply({
+
+              content:
+                `🟢 تم إعطاؤك رول **${selectedRole.name}** بنجاح.`,
+
+              ephemeral:
+                true
+
+            });
+
+          } catch (error) {
+
+            console.error(
+              '❌ Role Button Error:',
+              error
+            );
+
+            return interaction.reply({
+
+              content:
+                '❌ لم أستطع إعطاء أو إزالة الرول. تأكد أن رتبة البوت أعلى من الرول وأن لديه صلاحية Manage Roles.',
+
+              ephemeral:
+                true
+
+            });
+          }
+        }
 
         // ===================================================
         // STREAM APPLICATION
@@ -1903,12 +2157,6 @@ ${questions[i]}
           interaction.fields.getTextInputValue(
             'reason'
           );
-
-        /*
-         * ملاحظة:
-         * Discord لا يعيد رسالة الزر داخل Modal Submit
-         * لذلك لا نستخدم interaction.message هنا.
-         */
 
         const channel =
           interaction.channel;
