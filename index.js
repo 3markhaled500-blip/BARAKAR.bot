@@ -31,7 +31,7 @@ const CONFIG = {
   TICKET_CATEGORY_ID: '1553139841007620267',
   STAFF_ROLE_ID: '1556821008927948810',
 
-  // نفس الصورة المستخدمة في الترحيب و MOD STREAM
+  // نفس الصورة المستخدمة في الترحيب و MOD STREAM والقوانين والتذاكر
   BANNER_URL:
     'https://cdn.discordapp.com/banners/1545951349919711282/2744d1c5046464da9883162cb9f01183.webp?size=1024'
 };
@@ -64,6 +64,10 @@ const client = new Client({
   partials: [Partials.Channel]
 });
 
+// =========================================================
+// STAFF CHECK
+// =========================================================
+
 function isStaff(interaction) {
   const permissions = interaction.memberPermissions;
 
@@ -74,13 +78,21 @@ function isStaff(interaction) {
   );
 }
 
+// =========================================================
+// PANEL SYSTEM
+// =========================================================
+
 async function panel(channel, marker, payload) {
-  const messages = await channel.messages.fetch({ limit: 50 }).catch(() => null);
+  const messages = await channel.messages
+    .fetch({ limit: 50 })
+    .catch(() => null);
 
   const oldMessage = messages?.find(
     message =>
       message.author.id === client.user.id &&
-      message.embeds.some(embed => embed.footer?.text === marker)
+      message.embeds.some(
+        embed => embed.footer?.text === marker
+      )
   );
 
   if (oldMessage) {
@@ -90,10 +102,14 @@ async function panel(channel, marker, payload) {
   return channel.send(payload).catch(console.error);
 }
 
+// =========================================================
+// SETUP PANELS
+// =========================================================
+
 async function setupPanels(guild) {
-  // =========================================================
+  // =======================================================
   // MOD STREAM PANEL
-  // =========================================================
+  // =======================================================
 
   const applicationChannel = guild.channels.cache.get(
     CONFIG.APPLICATION_PANEL_CHANNEL_ID
@@ -119,7 +135,9 @@ async function setupPanels(guild) {
 🟡 **BARAKAT COMMUNITY**`
       )
       .setImage(CONFIG.BANNER_URL)
-      .setFooter({ text: 'BARAKAT_APPLICATION_PANEL' })
+      .setFooter({
+        text: 'BARAKAT_APPLICATION_PANEL'
+      })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
@@ -130,17 +148,23 @@ async function setupPanels(guild) {
         .setStyle(ButtonStyle.Primary)
     );
 
-    await panel(applicationChannel, 'BARAKAT_APPLICATION_PANEL', {
-      embeds: [embed],
-      components: [row]
-    });
+    await panel(
+      applicationChannel,
+      'BARAKAT_APPLICATION_PANEL',
+      {
+        embeds: [embed],
+        components: [row]
+      }
+    );
   }
 
-  // =========================================================
+  // =======================================================
   // RULES PANEL
-  // =========================================================
+  // =======================================================
 
-  const rulesChannel = guild.channels.cache.get(CONFIG.RULES_CHANNEL_ID);
+  const rulesChannel = guild.channels.cache.get(
+    CONFIG.RULES_CHANNEL_ID
+  );
 
   if (rulesChannel?.isTextBased()) {
     const rules = [
@@ -162,24 +186,30 @@ async function setupPanels(guild) {
       .setTitle('📜 قوانين BARAKAT COMMUNITY')
       .setDescription(
         rules
-          .map((rule, index) => `**${index + 1}.** ${rule}`)
+          .map(
+            (rule, index) =>
+              `**${index + 1}.** ${rule}`
+          )
           .join('\n\n')
       )
-
-      // نفس صورة الترحيب و MOD STREAM
       .setImage(CONFIG.BANNER_URL)
-
-      .setFooter({ text: 'BARAKAT_RULES_PANEL' })
+      .setFooter({
+        text: 'BARAKAT_RULES_PANEL'
+      })
       .setTimestamp();
 
-    await panel(rulesChannel, 'BARAKAT_RULES_PANEL', {
-      embeds: [embed]
-    });
+    await panel(
+      rulesChannel,
+      'BARAKAT_RULES_PANEL',
+      {
+        embeds: [embed]
+      }
+    );
   }
 
-  // =========================================================
+  // =======================================================
   // TICKET PANEL
-  // =========================================================
+  // =======================================================
 
   const ticketChannel = guild.channels.cache.get(
     CONFIG.TICKET_PANEL_CHANNEL_ID
@@ -195,13 +225,20 @@ async function setupPanels(guild) {
 🛠️ **الدعم الفني**
 ⚖️ **شكوى / عقوبة**
 🎥 **Stream Support**
-🎬 **Editor Application**`
+🎬 **Editor Application**
+
+━━━━━━━━━━━━━━━━━━━━
+
+📌 **نظام التذاكر:**
+يجب على أحد أعضاء الإدارة استلام التذكرة قبل البدء في حلها.
+
+━━━━━━━━━━━━━━━━━━━━
+🟡 **BARAKAT COMMUNITY**`
       )
-
-      // نفس صورة الترحيب و MOD STREAM
       .setImage(CONFIG.BANNER_URL)
-
-      .setFooter({ text: 'BARAKAT_TICKET_PANEL' })
+      .setFooter({
+        text: 'BARAKAT_TICKET_PANEL'
+      })
       .setTimestamp();
 
     const menu = new StringSelectMenuBuilder()
@@ -216,7 +253,8 @@ async function setupPanels(guild) {
         },
         {
           label: 'شكوى / عقوبة',
-          description: 'لتقديم شكوى أو الاعتراض على عقوبة',
+          description:
+            'لتقديم شكوى أو الاعتراض على عقوبة',
           value: 'complaint',
           emoji: '⚖️'
         },
@@ -234,10 +272,16 @@ async function setupPanels(guild) {
         }
       );
 
-    await panel(ticketChannel, 'BARAKAT_TICKET_PANEL', {
-      embeds: [embed],
-      components: [new ActionRowBuilder().addComponents(menu)]
-    });
+    await panel(
+      ticketChannel,
+      'BARAKAT_TICKET_PANEL',
+      {
+        embeds: [embed],
+        components: [
+          new ActionRowBuilder().addComponents(menu)
+        ]
+      }
+    );
   }
 }
 
@@ -256,20 +300,276 @@ function ticketName(user, type) {
 }
 
 // =========================================================
+// TICKET TOPIC DATA
+// =========================================================
+
+function getTicketOwner(channel) {
+  const topic = channel.topic || '';
+
+  const match = topic.match(
+    /ticket:([0-9]+)/
+  );
+
+  return match ? match[1] : null;
+}
+
+function getTicketClaimer(channel) {
+  const topic = channel.topic || '';
+
+  const match = topic.match(
+    /claimed:([0-9]+)/
+  );
+
+  return match ? match[1] : null;
+}
+
+async function claimTicket(interaction) {
+  if (!isStaff(interaction)) {
+    return interaction.reply({
+      content:
+        '❌ ليس لديك صلاحية استلام التذاكر.',
+      ephemeral: true
+    });
+  }
+
+  const channel = interaction.channel;
+
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    return interaction.reply({
+      content:
+        '❌ هذا الزر يعمل داخل التذاكر فقط.',
+      ephemeral: true
+    });
+  }
+
+  const existingClaimer =
+    getTicketClaimer(channel);
+
+  // لو التذكرة مستلمة بالفعل
+  if (existingClaimer) {
+    const claimer =
+      await interaction.guild.members
+        .fetch(existingClaimer)
+        .catch(() => null);
+
+    return interaction.reply({
+      content: `⚠️ هذه التذكرة تم استلامها بالفعل بواسطة ${
+        claimer || `<@${existingClaimer}>`
+      }.`,
+      ephemeral: true
+    });
+  }
+
+  const ownerId = getTicketOwner(channel);
+
+  if (!ownerId) {
+    return interaction.reply({
+      content:
+        '❌ لم أستطع معرفة صاحب التذكرة.',
+      ephemeral: true
+    });
+  }
+
+  // إضافة الشخص المستلم داخل Topic
+  await channel.setTopic(
+    `ticket:${ownerId};claimed:${interaction.user.id}`
+  );
+
+  // إزالة زر الاستلام ووضع زر الإغلاق فقط
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId('close_ticket')
+      .setLabel('إغلاق التذكرة')
+      .setEmoji('🔒')
+      .setStyle(ButtonStyle.Danger)
+  );
+
+  await interaction.update({
+    components: [row]
+  });
+
+  const embed = new EmbedBuilder()
+    .setColor(GREEN)
+    .setTitle('📥 تم استلام التذكرة')
+    .setDescription(
+      `تم استلام هذه التذكرة بواسطة:
+
+👮 **الإداري:** ${interaction.user}
+
+✅ يمكن الآن البدء في حل المشكلة.
+
+━━━━━━━━━━━━━━━━━━━━
+🟢 **التذكرة مستلمة**`
+    )
+    .setThumbnail(
+      interaction.user.displayAvatarURL({
+        size: 256
+      })
+    )
+    .setFooter({
+      text: 'BARAKAT COMMUNITY • Ticket System'
+    })
+    .setTimestamp();
+
+  await channel.send({
+    embeds: [embed]
+  });
+}
+
+// =========================================================
+// CLOSE TICKET
+// =========================================================
+
+async function closeTicket(interaction) {
+  if (!isStaff(interaction)) {
+    return interaction.reply({
+      content:
+        '❌ ليس لديك صلاحية إغلاق التذاكر.',
+      ephemeral: true
+    });
+  }
+
+  const channel = interaction.channel;
+
+  if (!channel || channel.type !== ChannelType.GuildText) {
+    return interaction.reply({
+      content:
+        '❌ هذا الزر يعمل داخل التذاكر فقط.',
+      ephemeral: true
+    });
+  }
+
+  const claimerId =
+    getTicketClaimer(channel);
+
+  // لا يمكن الإغلاق بدون استلام
+  if (!claimerId) {
+    return interaction.reply({
+      content:
+        '⚠️ يجب استلام التذكرة أولًا قبل إغلاقها.',
+      ephemeral: true
+    });
+  }
+
+  // فقط الشخص الذي استلم التذكرة يستطيع إغلاقها
+  if (claimerId !== interaction.user.id) {
+    return interaction.reply({
+      content:
+        `❌ هذه التذكرة مستلمة بواسطة <@${claimerId}> فقط، وهو المسؤول عن إغلاقها.`,
+      ephemeral: true
+    });
+  }
+
+  const ownerId =
+    getTicketOwner(channel);
+
+  await interaction.reply({
+    content:
+      '🔒 سيتم إغلاق التذكرة خلال 5 ثوانٍ...'
+  });
+
+  // رسالة داخل التذكرة
+  const closedEmbed = new EmbedBuilder()
+    .setColor(RED)
+    .setTitle('🔒 تم إغلاق التذكرة')
+    .setDescription(
+      `تم إغلاق هذه التذكرة بنجاح.
+
+👮 **تم الإغلاق بواسطة:** ${interaction.user}
+
+✅ **تم حل التذكرة.**
+
+━━━━━━━━━━━━━━━━━━━━
+🔴 **Ticket Closed**
+━━━━━━━━━━━━━━━━━━━━
+🟡 **BARAKAT COMMUNITY**`
+    )
+    .setThumbnail(
+      interaction.user.displayAvatarURL({
+        size: 256
+      })
+    )
+    .setFooter({
+      text: 'BARAKAT COMMUNITY • Ticket Closed'
+    })
+    .setTimestamp();
+
+  await channel.send({
+    embeds: [closedEmbed]
+  });
+
+  // DM لصاحب التذكرة
+  if (ownerId) {
+    const user =
+      await client.users
+        .fetch(ownerId)
+        .catch(() => null);
+
+    if (user) {
+      await user
+        .send({
+          embeds: [
+            new EmbedBuilder()
+              .setColor(GREEN)
+              .setTitle(
+                '🔒 تم إغلاق تذكرتك'
+              )
+              .setDescription(
+                `مرحبًا 👋
+
+تم إغلاق تذكرتك في **BARAKAT COMMUNITY**.
+
+👮 **تم إغلاق التذكرة بواسطة:**
+${interaction.user}
+
+✅ **تم حل التذكرة بنجاح.**
+
+شكرًا لتواصلك معنا. ❤️
+
+━━━━━━━━━━━━━━━━━━━━
+🟡 **BARAKAT COMMUNITY**`
+              )
+              .setImage(CONFIG.BANNER_URL)
+              .setFooter({
+                text:
+                  'BARAKAT COMMUNITY • Ticket System'
+              })
+              .setTimestamp()
+          ]
+        })
+        .catch(() => {});
+    }
+  }
+
+  // حذف التذكرة بعد 5 ثوانٍ
+  setTimeout(() => {
+    channel.delete().catch(() => {});
+  }, 5000);
+}
+
+// =========================================================
 // CREATE TICKET
 // =========================================================
 
-async function createTicket(interaction, type) {
-  const existing = interaction.guild.channels.cache.find(
-    channel =>
-      channel.type === ChannelType.GuildText &&
-      channel.parentId === CONFIG.TICKET_CATEGORY_ID &&
-      channel.topic === `ticket:${interaction.user.id}`
-  );
+async function createTicket(
+  interaction,
+  type
+) {
+  const existing =
+    interaction.guild.channels.cache.find(
+      channel =>
+        channel.type === ChannelType.GuildText &&
+        channel.parentId ===
+          CONFIG.TICKET_CATEGORY_ID &&
+        channel.topic?.startsWith(
+          `ticket:${interaction.user.id}`
+        )
+    );
 
   if (existing) {
     return interaction.reply({
-      content: `❌ لديك تذكرة مفتوحة بالفعل: ${existing}`,
+      content:
+        `❌ لديك تذكرة مفتوحة بالفعل: ${existing}`,
       ephemeral: true
     });
   }
@@ -281,78 +581,121 @@ async function createTicket(interaction, type) {
     editor: 'Editor Application'
   };
 
-  const channel = await interaction.guild.channels.create({
-    name: ticketName(interaction.user, type),
-    type: ChannelType.GuildText,
-    parent: CONFIG.TICKET_CATEGORY_ID,
-    topic: `ticket:${interaction.user.id}`,
+  const channel =
+    await interaction.guild.channels.create({
+      name: ticketName(
+        interaction.user,
+        type
+      ),
 
-    permissionOverwrites: [
-      {
-        id: interaction.guild.roles.everyone.id,
-        deny: [PermissionsBitField.Flags.ViewChannel]
-      },
+      type: ChannelType.GuildText,
 
-      {
-        id: interaction.user.id,
-        allow: [
-          PermissionsBitField.Flags.ViewChannel,
-          PermissionsBitField.Flags.SendMessages,
-          PermissionsBitField.Flags.ReadMessageHistory,
-          PermissionsBitField.Flags.AttachFiles
-        ]
-      },
+      parent: CONFIG.TICKET_CATEGORY_ID,
 
-      {
-        id: CONFIG.STAFF_ROLE_ID,
-        allow: [
-          PermissionsBitField.Flags.ViewChannel,
-          PermissionsBitField.Flags.SendMessages,
-          PermissionsBitField.Flags.ReadMessageHistory,
-          PermissionsBitField.Flags.ManageMessages
-        ]
-      }
-    ]
-  });
+      // في البداية لا يوجد مستلم
+      topic: `ticket:${interaction.user.id}`,
+
+      permissionOverwrites: [
+        {
+          id:
+            interaction.guild.roles.everyone.id,
+
+          deny: [
+            PermissionsBitField.Flags.ViewChannel
+          ]
+        },
+
+        {
+          id: interaction.user.id,
+
+          allow: [
+            PermissionsBitField.Flags.ViewChannel,
+            PermissionsBitField.Flags.SendMessages,
+            PermissionsBitField.Flags.ReadMessageHistory,
+            PermissionsBitField.Flags.AttachFiles
+          ]
+        },
+
+        {
+          id: CONFIG.STAFF_ROLE_ID,
+
+          allow: [
+            PermissionsBitField.Flags.ViewChannel,
+            PermissionsBitField.Flags.SendMessages,
+            PermissionsBitField.Flags.ReadMessageHistory,
+            PermissionsBitField.Flags.ManageMessages
+          ]
+        }
+      ]
+    });
 
   const embed = new EmbedBuilder()
-    .setColor(GREEN)
-    .setTitle(`🎫 ${labels[type]}`)
+    .setColor(YELLOW)
+    .setTitle(
+      `🎫 ${labels[type]}`
+    )
     .setDescription(
-      `أهلًا ${interaction.user}.
+      `أهلًا ${interaction.user} 👋
 
-اكتب مشكلتك بالتفصيل وانتظر أحد أعضاء الإدارة.`
+تم إنشاء التذكرة بنجاح.
+
+📌 **نظام التذكرة:**
+انتظر أحد أعضاء الإدارة حتى يقوم باستلام التذكرة.
+
+📥 **استلام التذكرة:**
+يجب على أحد أعضاء الإدارة الضغط على زر **استلام التذكرة**.
+
+🔒 **الإغلاق:**
+بعد حل المشكلة، يقوم الإداري المستلم بإغلاق التذكرة.
+
+━━━━━━━━━━━━━━━━━━━━
+🟡 **BARAKAT COMMUNITY**`
     )
     .setImage(CONFIG.BANNER_URL)
-    .setFooter({ text: 'BARAKAT_TICKET' })
+    .setFooter({
+      text: 'BARAKAT_TICKET'
+    })
     .setTimestamp();
 
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId('close_ticket')
-      .setLabel('إغلاق التذكرة')
-      .setEmoji('🔒')
-      .setStyle(ButtonStyle.Danger)
-  );
+  const row =
+    new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('claim_ticket')
+        .setLabel('استلام التذكرة')
+        .setEmoji('📥')
+        .setStyle(ButtonStyle.Success),
+
+      new ButtonBuilder()
+        .setCustomId('close_ticket')
+        .setLabel('إغلاق التذكرة')
+        .setEmoji('🔒')
+        .setStyle(ButtonStyle.Danger)
+    );
 
   await channel.send({
-    content: `${interaction.user} <@&${CONFIG.STAFF_ROLE_ID}>`,
+    content:
+      `${interaction.user} <@&${CONFIG.STAFF_ROLE_ID}>`,
+
     embeds: [embed],
+
     components: [row]
   });
 
   return interaction.reply({
-    content: `✅ تم إنشاء تذكرتك: ${channel}`,
+    content:
+      `✅ تم إنشاء تذكرتك: ${channel}`,
     ephemeral: true
   });
 }
 
 // =========================================================
-// BOT READY
+// READY
 // =========================================================
 
 client.once('ready', async () => {
-  console.log(`✅ Bot Online: ${client.user.tag}`);
+  console.log(
+    `✅ Bot Online: ${client.user.tag}`
+  );
 
   client.user.setPresence({
     activities: [
@@ -361,45 +704,73 @@ client.once('ready', async () => {
         type: ActivityType.Watching
       }
     ],
+
     status: 'online'
   });
 
-  const guild = client.guilds.cache.get(CONFIG.GUILD_ID);
+  const guild =
+    client.guilds.cache.get(
+      CONFIG.GUILD_ID
+    );
 
   if (!guild) {
-    return console.error('❌ لم يتم العثور على السيرفر.');
+    return console.error(
+      '❌ لم يتم العثور على السيرفر.'
+    );
   }
 
   await setupPanels(guild);
 
-  console.log('✅ تم تجهيز MOD STREAM + Rules + Tickets.');
+  console.log(
+    '✅ تم تجهيز MOD STREAM + Rules + Tickets.'
+  );
 });
 
 // =========================================================
-// WELCOME SYSTEM
+// WELCOME
 // =========================================================
 
-client.on('guildMemberAdd', async member => {
-  try {
-    if (member.guild.id !== CONFIG.GUILD_ID) return;
+client.on(
+  'guildMemberAdd',
+  async member => {
+    try {
+      if (
+        member.guild.id !==
+        CONFIG.GUILD_ID
+      ) {
+        return;
+      }
 
-    const role = member.guild.roles.cache.get(CONFIG.WELCOME_ROLE_ID);
+      const role =
+        member.guild.roles.cache.get(
+          CONFIG.WELCOME_ROLE_ID
+        );
 
-    if (role) {
-      await member.roles.add(role).catch(console.error);
-    }
+      if (role) {
+        await member.roles
+          .add(role)
+          .catch(console.error);
+      }
 
-    const channel = member.guild.channels.cache.get(
-      CONFIG.WELCOME_CHANNEL_ID
-    );
+      const channel =
+        member.guild.channels.cache.get(
+          CONFIG.WELCOME_CHANNEL_ID
+        );
 
-    if (!channel?.isTextBased()) return;
+      if (!channel?.isTextBased()) {
+        return;
+      }
 
-    const embed = new EmbedBuilder()
-      .setColor(YELLOW)
-      .setTitle('👋 أهلاً وسهلاً بك في BARAKAT COMMUNITY')
-      .setDescription(
-        `## نورت السيرفر يا ${member}
+      const embed =
+        new EmbedBuilder()
+          .setColor(YELLOW)
+
+          .setTitle(
+            '👋 أهلاً وسهلاً بك في BARAKAT COMMUNITY'
+          )
+
+          .setDescription(
+            `## نورت السيرفر يا ${member}
 
 أهلاً وسهلاً بك في **BARAKAT COMMUNITY** ❤️
 
@@ -411,66 +782,91 @@ client.on('guildMemberAdd', async member => {
 🆔 ID: \`${member.id}\`
 
 🟡 **استمتع بوقتك معنا!**`
-      )
-      .setThumbnail(
-        member.user.displayAvatarURL({
-          size: 512
-        })
-      )
-      .setImage(CONFIG.BANNER_URL)
-      .setFooter({
-        text: 'BARAKAT COMMUNITY'
-      })
-      .setTimestamp();
+          )
 
-    await channel.send({
-      content: `${member}`,
-      embeds: [embed]
-    });
-  } catch (error) {
-    console.error('❌ Welcome Error:', error);
+          .setThumbnail(
+            member.user.displayAvatarURL({
+              size: 512
+            })
+          )
+
+          .setImage(
+            CONFIG.BANNER_URL
+          )
+
+          .setFooter({
+            text:
+              'BARAKAT COMMUNITY'
+          })
+
+          .setTimestamp();
+
+      await channel.send({
+        content: `${member}`,
+        embeds: [embed]
+      });
+    } catch (error) {
+      console.error(
+        '❌ Welcome Error:',
+        error
+      );
+    }
   }
-});
+);
 
 // =========================================================
 // INTERACTIONS
 // =========================================================
 
-client.on('interactionCreate', async interaction => {
-  try {
-    // =======================================================
-    // BUTTONS
-    // =======================================================
+client.on(
+  'interactionCreate',
+  async interaction => {
+    try {
+      // =====================================================
+      // BUTTONS
+      // =====================================================
 
-    if (interaction.isButton()) {
-      // -----------------------------------------------------
-      // STREAM APPLICATION
-      // -----------------------------------------------------
+      if (interaction.isButton()) {
 
-      if (interaction.customId === 'streamer_apply') {
-        const user = interaction.user;
+        // ---------------------------------------------------
+        // STREAM APPLICATION
+        // ---------------------------------------------------
 
-        if (activeApplications.has(user.id)) {
-          return interaction.reply({
-            content:
-              '⚠️ لديك تقديم قيد التنفيذ بالفعل. راجع الخاص.',
-            ephemeral: true
-          });
-        }
+        if (
+          interaction.customId ===
+          'streamer_apply'
+        ) {
+          const user =
+            interaction.user;
 
-        activeApplications.add(user.id);
+          if (
+            activeApplications.has(
+              user.id
+            )
+          ) {
+            return interaction.reply({
+              content:
+                '⚠️ لديك تقديم قيد التنفيذ بالفعل. راجع الخاص.',
+              ephemeral: true
+            });
+          }
 
-        try {
-          await interaction.reply({
-            content:
-              '📩 تم بدء التقديم. افتح الخاص مع البوت للإجابة على الأسئلة.',
-            ephemeral: true
-          });
+          activeApplications.add(
+            user.id
+          );
 
-          const dm = await user.createDM();
+          try {
+            await interaction.reply({
+              content:
+                '📩 تم بدء التقديم. افتح الخاص مع البوت للإجابة على الأسئلة.',
+              ephemeral: true
+            });
 
-          await dm.send(
-            `━━━━━━━━━━━━━━━━━━━━
+            const dm =
+              await user.createDM();
+
+            await dm.send(
+              `━━━━━━━━━━━━━━━━━━━━
 🎥 **BARAKAT COMMUNITY**
 
 ## 𝗠𝗢𝗗 𝗦𝗧𝗥𝗘𝗔𝗠 Application
@@ -484,107 +880,168 @@ client.on('interactionCreate', async interaction => {
 ❌ للإلغاء اكتب \`إلغاء\` أو \`cancel\`.
 
 ━━━━━━━━━━━━━━━━━━━━`
-          );
+            );
 
-          const answers = [];
+            const answers = [];
 
-          for (let i = 0; i < questions.length; i++) {
-            await dm.send(
-              `━━━━━━━━━━━━━━━━━━━━
+            for (
+              let i = 0;
+              i < questions.length;
+              i++
+            ) {
+              await dm.send(
+                `━━━━━━━━━━━━━━━━━━━━
 ### السؤال ${i + 1}/${questions.length}
 
 ${questions[i]}
 
 أرسل إجابتك الآن.`
-            );
-
-            const collected = await dm.awaitMessages({
-              filter: message => message.author.id === user.id,
-              max: 1,
-              time: 5 * 60 * 1000
-            });
-
-            if (!collected.size) {
-              await dm.send(
-                '❌ انتهى وقت الإجابة وتم إلغاء التقديم.'
               );
-              return;
+
+              const collected =
+                await dm.awaitMessages({
+                  filter:
+                    message =>
+                      message.author.id ===
+                      user.id,
+
+                  max: 1,
+
+                  time:
+                    5 * 60 * 1000
+                });
+
+              if (
+                !collected.size
+              ) {
+                await dm.send(
+                  '❌ انتهى وقت الإجابة وتم إلغاء التقديم.'
+                );
+
+                return;
+              }
+
+              const answer =
+                collected
+                  .first()
+                  .content
+                  .trim();
+
+              if (
+                answer.toLowerCase() ===
+                  'إلغاء' ||
+                answer.toLowerCase() ===
+                  'cancel'
+              ) {
+                await dm.send(
+                  '❌ تم إلغاء التقديم.'
+                );
+
+                return;
+              }
+
+              answers.push(
+                answer
+              );
             }
 
-            const answer = collected.first().content.trim();
+            const review =
+              interaction.guild.channels.cache.get(
+                CONFIG.REVIEW_CHANNEL_ID
+              );
 
             if (
-              answer.toLowerCase() === 'إلغاء' ||
-              answer.toLowerCase() === 'cancel'
+              !review?.isTextBased()
             ) {
-              await dm.send('❌ تم إلغاء التقديم.');
+              await dm.send(
+                '❌ لم يتم العثور على روم المراجعة.'
+              );
+
               return;
             }
 
-            answers.push(answer);
-          }
+            const embed =
+              new EmbedBuilder()
+                .setColor(YELLOW)
 
-          const review = interaction.guild.channels.cache.get(
-            CONFIG.REVIEW_CHANNEL_ID
-          );
+                .setTitle(
+                  '📋 طلب 𝗠𝗢𝗗 𝗦𝗧𝗥𝗘𝗔𝗠 جديد'
+                )
 
-          if (!review?.isTextBased()) {
-            await dm.send(
-              '❌ لم يتم العثور على روم المراجعة.'
-            );
-            return;
-          }
+                .setThumbnail(
+                  user.displayAvatarURL({
+                    size: 512
+                  })
+                )
 
-          const embed = new EmbedBuilder()
-            .setColor(YELLOW)
-            .setTitle('📋 طلب 𝗠𝗢𝗗 𝗦𝗧𝗥𝗘𝗔𝗠 جديد')
-            .setThumbnail(
-              user.displayAvatarURL({
-                size: 512
-              })
-            )
-            .setDescription(
-              `━━━━━━━━━━━━━━━━━━━━
+                .setDescription(
+                  `━━━━━━━━━━━━━━━━━━━━
 👤 **المتقدم:** ${user}
 🆔 **Discord ID:** \`${user.id}\`
 🟡 **الحالة:** قيد المراجعة
 ━━━━━━━━━━━━━━━━━━━━`
-            )
-            .setTimestamp()
-            .setFooter({
-              text: 'BARAKAT COMMUNITY • Review System'
+                )
+
+                .setTimestamp()
+
+                .setFooter({
+                  text:
+                    'BARAKAT COMMUNITY • Review System'
+                });
+
+            questions.forEach(
+              (
+                question,
+                index
+              ) => {
+                embed.addFields({
+                  name:
+                    `${index + 1}️⃣ ${question}`.slice(
+                      0,
+                      256
+                    ),
+
+                  value: (
+                    answers[index] ||
+                    'لا توجد إجابة.'
+                  ).slice(
+                    0,
+                    1024
+                  )
+                });
+              }
+            );
+
+            const row =
+              new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                  .setCustomId(
+                    `accept_${user.id}`
+                  )
+                  .setLabel('قبول')
+                  .setEmoji('✅')
+                  .setStyle(
+                    ButtonStyle.Success
+                  ),
+
+                new ButtonBuilder()
+                  .setCustomId(
+                    `reject_${user.id}`
+                  )
+                  .setLabel('رفض')
+                  .setEmoji('❌')
+                  .setStyle(
+                    ButtonStyle.Danger
+                  )
+              );
+
+            await review.send({
+              embeds: [embed],
+              components: [row]
             });
 
-          questions.forEach((question, index) => {
-            embed.addFields({
-              name: `${index + 1}️⃣ ${question}`.slice(0, 256),
-              value: (
-                answers[index] || 'لا توجد إجابة.'
-              ).slice(0, 1024)
-            });
-          });
-
-          const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-              .setCustomId(`accept_${user.id}`)
-              .setLabel('قبول')
-              .setEmoji('✅')
-              .setStyle(ButtonStyle.Success),
-
-            new ButtonBuilder()
-              .setCustomId(`reject_${user.id}`)
-              .setLabel('رفض')
-              .setEmoji('❌')
-              .setStyle(ButtonStyle.Danger)
-          );
-
-          await review.send({
-            embeds: [embed],
-            components: [row]
-          });
-
-          await dm.send(
-            `━━━━━━━━━━━━━━━━━━━━
+            await dm.send(
+              `━━━━━━━━━━━━━━━━━━━━
 ✅ **تم إرسال تقديمك بنجاح!**
 
 تم إرسال طلبك إلى فريق المراجعة.
@@ -593,118 +1050,183 @@ ${questions[i]}
 
 🟡 **BARAKAT COMMUNITY**
 ━━━━━━━━━━━━━━━━━━━━`
+            );
+
+            await interaction.editReply({
+              content:
+                '✅ تم إرسال تقديمك إلى فريق المراجعة بنجاح.'
+            });
+          } catch (error) {
+            console.error(
+              '❌ Application Error:',
+              error
+            );
+
+            await interaction
+              .editReply({
+                content:
+                  '❌ حدث خطأ أثناء التقديم. حاول مرة أخرى.'
+              })
+              .catch(
+                () => {}
+              );
+          } finally {
+            activeApplications.delete(
+              user.id
+            );
+          }
+
+          return;
+        }
+
+        // ---------------------------------------------------
+        // CLAIM TICKET
+        // ---------------------------------------------------
+
+        if (
+          interaction.customId ===
+          'claim_ticket'
+        ) {
+          await claimTicket(
+            interaction
           );
 
-          await interaction.editReply({
-            content:
-              '✅ تم إرسال تقديمك إلى فريق المراجعة بنجاح.'
-          });
-        } catch (error) {
-          console.error('❌ Application Error:', error);
+          return;
+        }
 
-          await interaction
-            .editReply({
+        // ---------------------------------------------------
+        // CLOSE TICKET
+        // ---------------------------------------------------
+
+        if (
+          interaction.customId ===
+          'close_ticket'
+        ) {
+          await closeTicket(
+            interaction
+          );
+
+          return;
+        }
+
+        // ---------------------------------------------------
+        // ACCEPT APPLICATION
+        // ---------------------------------------------------
+
+        if (
+          interaction.customId.startsWith(
+            'accept_'
+          )
+        ) {
+          if (
+            !isStaff(interaction)
+          ) {
+            return interaction.reply({
               content:
-                '❌ حدث خطأ أثناء التقديم. حاول مرة أخرى.'
-            })
-            .catch(() => {});
-        } finally {
-          activeApplications.delete(user.id);
-        }
+                '❌ ليس لديك صلاحية مراجعة التقديمات.',
+              ephemeral: true
+            });
+          }
 
-        return;
-      }
+          const userId =
+            interaction.customId.replace(
+              'accept_',
+              ''
+            );
 
-      // -----------------------------------------------------
-      // ACCEPT APPLICATION
-      // -----------------------------------------------------
+          const member =
+            await interaction.guild.members
+              .fetch(userId)
+              .catch(
+                () => null
+              );
 
-      if (interaction.customId.startsWith('accept_')) {
-        if (!isStaff(interaction)) {
-          return interaction.reply({
-            content:
-              '❌ ليس لديك صلاحية مراجعة التقديمات.',
-            ephemeral: true
-          });
-        }
+          if (!member) {
+            return interaction.reply({
+              content:
+                '❌ العضو غير موجود في السيرفر.',
+              ephemeral: true
+            });
+          }
 
-        const userId = interaction.customId.replace(
-          'accept_',
-          ''
-        );
+          const role =
+            interaction.guild.roles.cache.get(
+              CONFIG.STREAMER_MOD_ROLE_ID
+            );
 
-        const member = await interaction.guild.members
-          .fetch(userId)
-          .catch(() => null);
+          if (!role) {
+            return interaction.reply({
+              content:
+                '❌ لم يتم العثور على رول Streamer Mod.',
+              ephemeral: true
+            });
+          }
 
-        if (!member) {
-          return interaction.reply({
-            content:
-              '❌ العضو غير موجود في السيرفر.',
-            ephemeral: true
-          });
-        }
+          try {
+            await member.roles.add(
+              role
+            );
+          } catch {
+            return interaction.reply({
+              content:
+                '❌ لم أستطع إعطاء الرول. تأكد أن رتبة البوت أعلى من رتبة Streamer Mod.',
+              ephemeral: true
+            });
+          }
 
-        const role = interaction.guild.roles.cache.get(
-          CONFIG.STREAMER_MOD_ROLE_ID
-        );
+          const old =
+            interaction.message.embeds[0];
 
-        if (!role) {
-          return interaction.reply({
-            content:
-              '❌ لم يتم العثور على رول Streamer Mod.',
-            ephemeral: true
-          });
-        }
+          const embed =
+            EmbedBuilder.from(old)
+              .setColor(GREEN)
 
-        try {
-          await member.roles.add(role);
-        } catch {
-          return interaction.reply({
-            content:
-              '❌ لم أستطع إعطاء الرول. تأكد أن رتبة البوت أعلى من رتبة Streamer Mod.',
-            ephemeral: true
-          });
-        }
-
-        const old = interaction.message.embeds[0];
-
-        const embed = EmbedBuilder.from(old)
-          .setColor(GREEN)
-          .setDescription(
-            `${old.description || ''}
+              .setDescription(
+                `${old.description || ''}
 
 ━━━━━━━━━━━━━━━━━━━━
 ## ✅ تم قبول التقديم
 
 👮 **تم قبوله بواسطة:** ${interaction.user}`
-          )
-          .setFooter({
-            text: 'BARAKAT COMMUNITY • ACCEPTED'
+              )
+
+              .setFooter({
+                text:
+                  'BARAKAT COMMUNITY • ACCEPTED'
+              });
+
+          const row =
+            new ActionRowBuilder().addComponents(
+              new ButtonBuilder()
+                .setCustomId(
+                  'application_done'
+                )
+                .setLabel(
+                  'تم قبول التقديم'
+                )
+                .setEmoji('✅')
+                .setStyle(
+                  ButtonStyle.Success
+                )
+                .setDisabled(true)
+            );
+
+          await interaction.update({
+            embeds: [embed],
+            components: [row]
           });
 
-        const row = new ActionRowBuilder().addComponents(
-          new ButtonBuilder()
-            .setCustomId('application_done')
-            .setLabel('تم قبول التقديم')
-            .setEmoji('✅')
-            .setStyle(ButtonStyle.Success)
-            .setDisabled(true)
-        );
+          const user =
+            await client.users
+              .fetch(userId)
+              .catch(
+                () => null
+              );
 
-        await interaction.update({
-          embeds: [embed],
-          components: [row]
-        });
-
-        const user = await client.users
-          .fetch(userId)
-          .catch(() => null);
-
-        if (user) {
-          await user
-            .send(
-              `━━━━━━━━━━━━━━━━━━━━
+          if (user) {
+            await user
+              .send(
+                `━━━━━━━━━━━━━━━━━━━━
 🎉 **مبروك!**
 
 تم **قبول** تقديمك كـ **مقبول مبدئيًا** في:
@@ -716,19 +1238,95 @@ ${questions[i]}
 🎭 تم إعطاؤك الرول بنجاح. استعد للمقابلة النهائية.
 
 ━━━━━━━━━━━━━━━━━━━━`
-            )
-            .catch(() => {});
+              )
+              .catch(
+                () => {}
+              );
+          }
+
+          return;
         }
 
-        return;
+        // ---------------------------------------------------
+        // REJECT APPLICATION
+        // ---------------------------------------------------
+
+        if (
+          interaction.customId.startsWith(
+            'reject_'
+          )
+        ) {
+          if (
+            !isStaff(interaction)
+          ) {
+            return interaction.reply({
+              content:
+                '❌ ليس لديك صلاحية مراجعة التقديمات.',
+              ephemeral: true
+            });
+          }
+
+          const userId =
+            interaction.customId.replace(
+              'reject_',
+              ''
+            );
+
+          const modal =
+            new ModalBuilder()
+              .setCustomId(
+                `reject_modal_${userId}`
+              )
+              .setTitle(
+                '❌ رفض MOD STREAM'
+              );
+
+          const reason =
+            new TextInputBuilder()
+              .setCustomId(
+                'reason'
+              )
+              .setLabel(
+                'سبب الرفض'
+              )
+              .setPlaceholder(
+                'اكتب سبب رفض التقديم هنا...'
+              )
+              .setStyle(
+                TextInputStyle.Paragraph
+              )
+              .setRequired(true)
+              .setMaxLength(
+                1000
+              );
+
+          modal.addComponents(
+            new ActionRowBuilder().addComponents(
+              reason
+            )
+          );
+
+          await interaction.showModal(
+            modal
+          );
+
+          return;
+        }
       }
 
-      // -----------------------------------------------------
-      // REJECT APPLICATION
-      // -----------------------------------------------------
+      // =====================================================
+      // MODAL SUBMIT
+      // =====================================================
 
-      if (interaction.customId.startsWith('reject_')) {
-        if (!isStaff(interaction)) {
+      if (
+        interaction.isModalSubmit() &&
+        interaction.customId.startsWith(
+          'reject_modal_'
+        )
+      ) {
+        if (
+          !isStaff(interaction)
+        ) {
           return interaction.reply({
             content:
               '❌ ليس لديك صلاحية مراجعة التقديمات.',
@@ -736,97 +1334,34 @@ ${questions[i]}
           });
         }
 
-        const userId = interaction.customId.replace(
-          'reject_',
-          ''
-        );
+        const userId =
+          interaction.customId.replace(
+            'reject_modal_',
+            ''
+          );
 
-        const modal = new ModalBuilder()
-          .setCustomId(`reject_modal_${userId}`)
-          .setTitle('❌ رفض MOD STREAM');
+        const reason =
+          interaction.fields.getTextInputValue(
+            'reason'
+          );
 
-        const reason = new TextInputBuilder()
-          .setCustomId('reason')
-          .setLabel('سبب الرفض')
-          .setPlaceholder(
-            'اكتب سبب رفض التقديم هنا...'
-          )
-          .setStyle(TextInputStyle.Paragraph)
-          .setRequired(true)
-          .setMaxLength(1000);
+        const old =
+          interaction.message?.embeds?.[0];
 
-        modal.addComponents(
-          new ActionRowBuilder().addComponents(reason)
-        );
-
-        await interaction.showModal(modal);
-
-        return;
-      }
-
-      // -----------------------------------------------------
-      // CLOSE TICKET
-      // -----------------------------------------------------
-
-      if (interaction.customId === 'close_ticket') {
-        if (!isStaff(interaction)) {
+        if (!old) {
           return interaction.reply({
             content:
-              '❌ لا يمكنك إغلاق التذكرة.',
+              '❌ لم أستطع العثور على طلب التقديم.',
             ephemeral: true
           });
         }
 
-        await interaction.reply(
-          '🔒 سيتم إغلاق التذكرة خلال 3 ثوانٍ.'
-        );
+        const embed =
+          EmbedBuilder.from(old)
+            .setColor(RED)
 
-        setTimeout(() => {
-          interaction.channel.delete().catch(() => {});
-        }, 3000);
-
-        return;
-      }
-    }
-
-    // =======================================================
-    // REJECT MODAL
-    // =======================================================
-
-    if (
-      interaction.isModalSubmit() &&
-      interaction.customId.startsWith('reject_modal_')
-    ) {
-      if (!isStaff(interaction)) {
-        return interaction.reply({
-          content:
-            '❌ ليس لديك صلاحية مراجعة التقديمات.',
-          ephemeral: true
-        });
-      }
-
-      const userId = interaction.customId.replace(
-        'reject_modal_',
-        ''
-      );
-
-      const reason =
-        interaction.fields.getTextInputValue('reason');
-
-      const old = interaction.message?.embeds?.[0];
-
-      if (!old) {
-        return interaction.reply({
-          content:
-            '❌ لم أستطع العثور على طلب التقديم.',
-          ephemeral: true
-        });
-      }
-
-      const embed = EmbedBuilder.from(old)
-        .setColor(RED)
-        .setDescription(
-          `${old.description || ''}
+            .setDescription(
+              `${old.description || ''}
 
 ━━━━━━━━━━━━━━━━━━━━
 ## ❌ تم رفض التقديم
@@ -834,33 +1369,45 @@ ${questions[i]}
 📝 **سبب الرفض:** ${reason}
 
 👮 **تم رفضه بواسطة:** ${interaction.user}`
-        )
-        .setFooter({
-          text: 'BARAKAT COMMUNITY • REJECTED'
+            )
+
+            .setFooter({
+              text:
+                'BARAKAT COMMUNITY • REJECTED'
+            });
+
+        const row =
+          new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setCustomId(
+                'application_rejected'
+              )
+              .setLabel(
+                'تم رفض التقديم'
+              )
+              .setEmoji('❌')
+              .setStyle(
+                ButtonStyle.Danger
+              )
+              .setDisabled(true)
+          );
+
+        await interaction.update({
+          embeds: [embed],
+          components: [row]
         });
 
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId('application_rejected')
-          .setLabel('تم رفض التقديم')
-          .setEmoji('❌')
-          .setStyle(ButtonStyle.Danger)
-          .setDisabled(true)
-      );
+        const user =
+          await client.users
+            .fetch(userId)
+            .catch(
+              () => null
+            );
 
-      await interaction.update({
-        embeds: [embed],
-        components: [row]
-      });
-
-      const user = await client.users
-        .fetch(userId)
-        .catch(() => null);
-
-      if (user) {
-        await user
-          .send(
-            `━━━━━━━━━━━━━━━━━━━━
+        if (user) {
+          await user
+            .send(
+              `━━━━━━━━━━━━━━━━━━━━
 ❌ **تم رفض تقديمك**
 
 تقديمك كـ **𝗠𝗢𝗗 𝗦𝗧𝗥𝗘𝗔𝗠** في **BARAKAT COMMUNITY**.
@@ -872,44 +1419,54 @@ ${questions[i]}
 يمكنك التقديم مرة أخرى إذا تم فتح التقديم من جديد.
 
 ━━━━━━━━━━━━━━━━━━━━`
-          )
-          .catch(() => {});
+            )
+            .catch(
+              () => {}
+            );
+        }
+
+        return;
       }
 
-      return;
-    }
+      // =====================================================
+      // TICKET MENU
+      // =====================================================
 
-    // =======================================================
-    // TICKET SELECT MENU
-    // =======================================================
+      if (
+        interaction.isStringSelectMenu() &&
+        interaction.customId ===
+          'ticket_type'
+      ) {
+        await createTicket(
+          interaction,
+          interaction.values[0]
+        );
 
-    if (
-      interaction.isStringSelectMenu() &&
-      interaction.customId === 'ticket_type'
-    ) {
-      await createTicket(
-        interaction,
-        interaction.values[0]
+        return;
+      }
+    } catch (error) {
+      console.error(
+        '❌ Interaction Error:',
+        error
       );
 
-      return;
-    }
-  } catch (error) {
-    console.error('❌ Interaction Error:', error);
-
-    if (
-      !interaction.replied &&
-      !interaction.deferred
-    ) {
-      await interaction
-        .reply({
-          content: '❌ حدث خطأ غير متوقع.',
-          ephemeral: true
-        })
-        .catch(() => {});
+      if (
+        !interaction.replied &&
+        !interaction.deferred
+      ) {
+        await interaction
+          .reply({
+            content:
+              '❌ حدث خطأ غير متوقع.',
+            ephemeral: true
+          })
+          .catch(
+            () => {}
+          );
+      }
     }
   }
-});
+);
 
 // =========================================================
 // LOGIN
@@ -924,7 +1481,9 @@ if (!process.env.BOT_TOKEN) {
 }
 
 client
-  .login(process.env.BOT_TOKEN)
+  .login(
+    process.env.BOT_TOKEN
+  )
   .catch(error => {
     console.error(
       '❌ Discord Login Error:',
