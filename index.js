@@ -69,9 +69,9 @@ const questions = [
 
   "كم عمرك؟",
 
-  "الخبرة في؟ mod.",
+  "الخبرة في؟ mod 𝗦𝗧𝗥𝗘𝗔𝗠.",
 
-  "أازاي تعمل؟ (Timeout) للشخص وامتى تعمل له (Timeout)",
+  "عاوز تقدم مود تيك توك ولا كيك؟  ",
 
   "ازاي تعمل؟ (Ban) للشخص وامتى تعمل له (Ban)",
 
@@ -164,7 +164,7 @@ client.once("ready", async () => {
       )
 
       .setLabel(
-        "تقديم  KICK"
+        "تقديم  mod 𝗦𝗧𝗥𝗘𝗔𝗠"
       )
 
       .setEmoji("🎥")
@@ -187,7 +187,7 @@ client.once("ready", async () => {
   }).catch(console.error);
 
   console.log(
-    "✅ تم إرسال بانل Streamer Mod."
+    "✅ تم إرسال بانل Mod 𝗦𝗧𝗥𝗘𝗔𝗠."
   );
 });
 
