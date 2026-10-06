@@ -123,9 +123,9 @@ client.once("ready", async () => {
     )
 
     .setDescription(
-      "## 🎥 MOD \n\n" +
+      "## 🎥 MOD 𝗦𝗧𝗥𝗘𝗔𝗠 \n\n" +
 
-      "هل ترغب في الانضمام إلى فريق **MOD **؟\n\n" +
+      "هل ترغب في الانضمام إلى فريق **MOD 𝗦𝗧𝗥𝗘𝗔𝗠 **؟\n\n" +
 
       "اضغط على الزر بالأسفل لبدء التقديم.\n\n" +
 
@@ -140,7 +140,7 @@ client.once("ready", async () => {
     )
 
     .setFooter({
-      text: "BARAKAT COMMUNITY • MOD "
+      text: "BARAKAT COMMUNITY • MOD 𝗦𝗧𝗥𝗘𝗔𝗠 "
     })
 
     .setTimestamp();
@@ -413,7 +413,7 @@ client.on(
 
                 "🎥 **BARAKAT COMMUNITY**\n" +
 
-                "## MOD  Application\n\n" +
+                "## MOD 𝗦𝗧𝗥𝗘𝗔𝗠  Application\n\n" +
 
                 "أهلًا بك في نموذج التقديم.\n\n" +
 
@@ -597,7 +597,7 @@ client.on(
                 )
 
                 .setTitle(
-                  "📋 طلب MOD  جديد"
+                  "📋 طلب MOD 𝗦𝗧𝗥𝗘𝗔𝗠  جديد"
                 )
 
                 .setThumbnail(
@@ -993,11 +993,11 @@ client.on(
 
               "تم **قبول** تقديمك كـ **مقبول  مبدئيا** في:\n" +
 
-              "🟡 **MOD **\n\n" +
+              "🟡 **MOD 𝗦𝗧𝗥𝗘𝗔𝗠 **\n\n" +
 
               `👮 **تم قبولك بواسطة:** ${interaction.user.username}\n\n` +
 
-              "🎭 MOD  تم إعطاؤك الرول بنجاح مقبول  مبدئيا استعد لعمل المقابلة للرولا النهاء كا.\n\n" +
+              "🎭 MOD 𝗦𝗧𝗥𝗘𝗔𝗠  تم إعطاؤك الرول بنجاح مقبول  مبدئيا استعد لعمل المقابلة للرولا النهاء كا.\n\n" +
 
               "━━━━━━━━━━━━━━━━━━━━"
 
@@ -1223,7 +1223,7 @@ client.on(
 
             "❌ **تم رفض تقديمك**\n\n" +
 
-            "تقديمك كـ **MOD ** في:\n" +
+            "تقديمك كـ **MOD 𝗦𝗧𝗥𝗘𝗔𝗠 ** في:\n" +
 
             "🟡 **BARAKAT COMMUNITY**\n\n" +
 
