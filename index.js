@@ -456,13 +456,11 @@ client.on(
               i++
             ) {
 
-              await dm.send(
-
-                `━━━━━━━━━━━━━━━━━━━━\n` +
-
-                `### السؤال ${i + 1}/${questions.length}\n\n` +
-
-                `${questions[i]}\n\n` +
+       await dm.send(
+  `━━━━━━━━━━━━━━━━━━━━\n` +
+  `### السؤال ${i + 1}/${questions.length}\n\n` +
+  `${questions[i]}\n\n`
+);
 
            
 
