@@ -79,9 +79,9 @@ const MESSAGE_COOLDOWN = 30000;
 const questions = [
   'ما اسمك؟',
   'كم عمرك؟',
-  'الخبرة في؟ Kick.',
-  'ازاي تعمل Timeout للشخص وامتى؟',
-  'ازاي تعمل Ban للشخص وامتى؟',
+  'الخبرة في؟ MOD 𝗦𝗧𝗥𝗘𝗔𝗠 .',
+  'امتي تعمل ميوت لحد؟',
+  'امتي اعمل كيك لحد؟',
   'تعمل ايه عشان تعمل تصويت وامتى؟',
   'تعمل ايه عشان تغير وضع اللعبة وامتى؟',
   'ازاي تعين عنوان البث؟'
@@ -94,13 +94,13 @@ const questions = [
 function levelFromXP(xp) {
 
   let level = 0;
-  let need = 100;
+  let need = 70;
 
   while (xp >= need) {
 
     xp -= need;
     level++;
-    need = 100 + level * 50;
+    need = 70 + level * 50;
 
   }
 
@@ -109,7 +109,7 @@ function levelFromXP(xp) {
 
 function nextXP(level) {
 
-  return 100 + level * 50;
+  return 70 + level * 50;
 
 }
 
@@ -416,7 +416,7 @@ async function setupPanels(guild) {
         )
 
         .setDescription(
-`## 🎥 MOD KICK
+`## 🎥 MOD 𝗦𝗧𝗥𝗘𝗔𝗠
 
 اضغط على الزر بالأسفل لبدء التقديم.
 
@@ -431,7 +431,7 @@ async function setupPanels(guild) {
 
         .setFooter({
           text:
-            'BARAKAT COMMUNITY • MOD KICK'
+            'BARAKAT COMMUNITY • MOD 𝗦𝗧𝗥𝗘𝗔𝗠'
         });
 
     const row =
@@ -445,7 +445,7 @@ async function setupPanels(guild) {
             )
 
             .setLabel(
-              'تقديم MOD KICK'
+              'تقديم MOD 𝗦𝗧𝗥𝗘𝗔𝗠'
             )
 
             .setEmoji(
@@ -2109,7 +2109,7 @@ client.on(
               await interaction.user.createDM();
 
             await dm.send(
-              '🎥 **BARAKAT COMMUNITY — MOD KICK Application**\n\nسأرسل لك الأسئلة واحدًا تلو الآخر. لديك 5 دقائق لكل سؤال.'
+              '🎥 **BARAKAT COMMUNITY — MOD 𝗦𝗧𝗥𝗘𝗔𝗠 Application**\n\nسأرسل لك الأسئلة واحدًا تلو الآخر..'
             );
 
             const answers = [];
@@ -2203,7 +2203,7 @@ client.on(
                 )
 
                 .setTitle(
-                  '📋 طلب MOD KICK جديد'
+                  '📋 طلب MOD 𝗦𝗧𝗥𝗘𝗔𝗠 جديد'
                 )
 
                 .setThumbnail(
@@ -2303,7 +2303,7 @@ client.on(
 
             await appLog(
 
-              '📋 تقديم MOD KICK جديد',
+              '📋 تقديم MOD 𝗦𝗧𝗥𝗘𝗔𝗠 جديد',
 
               YELLOW,
 
@@ -2491,7 +2491,7 @@ ${interaction.user}`
               .send(
 `🎉 مبروك!
 
-تم قبول تقديمك في **MOD KICK**.
+تم قبول تقديمك في **MOD 𝗦𝗧𝗥𝗘𝗔𝗠**.
 
 👮 تم قبولك بواسطة:
 ${interaction.user.username}`
@@ -2504,7 +2504,7 @@ ${interaction.user.username}`
 
           await appLog(
 
-            '✅ تم قبول تقديم MOD KICK',
+            '✅ تم قبول تقديم MOD 𝗦𝗧𝗥𝗘𝗔𝗠',
 
             GREEN,
 
@@ -2715,7 +2715,7 @@ ${interaction.user}`
 
           await user
             .send(
-`❌ تم رفض تقديمك في **MOD KICK**.
+`❌ تم رفض تقديمك في **MOD 𝗦𝗧𝗥𝗘𝗔𝗠**.
 
 📝 **السبب:**
 ${reason}`
@@ -2726,7 +2726,7 @@ ${reason}`
 
           await appLog(
 
-            '❌ تم رفض تقديم MOD KICK',
+            '❌ تم رفض تقديم MOD 𝗦𝗧𝗥𝗘𝗔𝗠',
 
             RED,
 
