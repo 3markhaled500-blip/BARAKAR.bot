@@ -1,4 +1,3 @@
-
 const {
   Client,
   GatewayIntentBits,
@@ -15,11 +14,11 @@ const {
   SlashCommandBuilder,
 } = require("discord.js");
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 // ==========================================
-// BARAKAT COMMUNITY - Discord Bot
+// BARAKAT COMMUNITY
 // ==========================================
 
 const CONFIG = {
@@ -45,38 +44,55 @@ const CONFIG = {
   ADMIN_LOG_CHANNEL_ID: "1556837526445101056",
 };
 
-const TOKEN = process.env.DISCORD_TOKEN;
-const WELCOME_BANNER_URL = process.env.WELCOME_BANNER_URL || "";
+const TOKEN = process.env.DISCORD_TOKEN?.trim();
+const WELCOME_BANNER_URL = process.env.WELCOME_BANNER_URL?.trim() || "";
 
 if (!TOKEN) {
-  console.error("Missing DISCORD_TOKEN in Railway Variables.");
+  console.error(
+    "[CONFIG ERROR] DISCORD_TOKEN is missing or empty in NexusHost Environment Variables."
+  );
   process.exit(1);
 }
 
 const DB_PATH = path.join(__dirname, "database.json");
 
 function loadDB() {
-  try {
-    if (fs.existsSync(DB_PATH)) {
-      return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
-    }
-  } catch (error) {
-    console.error("Database read error:", error);
-  }
-
-  return {
+  const defaults = {
     applications: {},
     tickets: {},
   };
+
+  try {
+    if (!fs.existsSync(DB_PATH)) {
+      return defaults;
+    }
+
+    const saved = JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+
+    return {
+      applications:
+        saved.applications &&
+        typeof saved.applications === "object"
+          ? saved.applications
+          : {},
+      tickets:
+        saved.tickets && typeof saved.tickets === "object"
+          ? saved.tickets
+          : {},
+    };
+  } catch (error) {
+    console.error("Database read error:", error.message);
+    return defaults;
+  }
 }
 
 const db = loadDB();
 
 function saveDB() {
   try {
-    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2));
+    fs.writeFileSync(DB_PATH, JSON.stringify(db, null, 2), "utf8");
   } catch (error) {
-    console.error("Database write error:", error);
+    console.error("Database write error:", error.message);
   }
 }
 
@@ -89,7 +105,11 @@ const client = new Client({
     GatewayIntentBits.DirectMessages,
     GatewayIntentBits.GuildVoiceStates,
   ],
-  partials: [Partials.Channel, Partials.Message, Partials.User],
+  partials: [
+    Partials.Channel,
+    Partials.Message,
+    Partials.User,
+  ],
 });
 
 const COLORS = {
@@ -104,32 +124,52 @@ function makeEmbed(title, description, color = COLORS.primary) {
   return new EmbedBuilder()
     .setColor(color)
     .setTitle(title)
-    .setDescription(description)
+    .setDescription(String(description).slice(0, 4000))
     .setFooter({ text: CONFIG.SERVER_NAME })
     .setTimestamp();
 }
 
 function getChannel(guild, id) {
-  return guild.channels.cache.get(id);
+  return guild?.channels.cache.get(id) || null;
 }
 
-async function sendLog(guild, channelId, embed) {
+async function sendLog(guild, channelId, embed, files = []) {
   const channel = getChannel(guild, channelId);
-  if (!channel || !channel.isTextBased()) return;
+
+  if (!channel?.isTextBased()) {
+    console.warn(`Log channel not found: ${channelId}`);
+    return;
+  }
 
   try {
-    await channel.send({ embeds: [embed] });
+    await channel.send({ embeds: [embed], files });
   } catch (error) {
     console.error("Log send error:", error.message);
   }
 }
 
 function safeName(name) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9-]/g, "-")
-    .replace(/-+/g, "-")
-    .slice(0, 18) || "member";
+  return (
+    String(name)
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 18) || "member"
+  );
+}
+
+function isAdmin(member) {
+  return Boolean(
+    member?.permissions?.has(PermissionFlagsBits.Administrator)
+  );
+}
+
+function isTicketStaff(member) {
+  return (
+    isAdmin(member) ||
+    Boolean(member?.roles?.cache?.has(CONFIG.TICKET_STAFF_ROLE_ID))
+  );
 }
 
 function ticketTypeName(type) {
@@ -144,6 +184,10 @@ function ticketTypeName(type) {
   return names[type] || "تذكرة";
 }
 
+// ==========================================
+// TICKET PANEL
+// ==========================================
+
 function makeTicketPanel() {
   const embed = makeEmbed(
     "🎫 نظام التذاكر | BARAKAT COMMUNITY",
@@ -151,13 +195,15 @@ function makeTicketPanel() {
       "أهلًا بك في نظام التذاكر الرسمي.",
       "",
       "اختر نوع التذكرة من القائمة:",
+      "",
       "🎧 الدعم الفني",
       "🎬 التقديم على إديتور",
       "📢 طلبات الستريم",
       "⚠️ الشكاوى",
       "📩 طلب آخر",
       "",
-      "يرجى عدم فتح تذاكر مكررة، وانتظار رد الإدارة.",
+      "يرجى عدم فتح تذاكر مكررة.",
+      "انتظر رد فريق الإدارة بعد فتح التذكرة.",
     ].join("\n")
   );
 
@@ -179,7 +225,7 @@ function makeTicketPanel() {
       },
       {
         label: "طلبات الستريم",
-        description: "مساعدة أو طلب متعلق بالبث",
+        description: "طلب متعلق بالبث",
         value: "stream",
         emoji: "📢",
       },
@@ -199,9 +245,15 @@ function makeTicketPanel() {
 
   return {
     embeds: [embed],
-    components: [new ActionRowBuilder().addComponents(menu)],
+    components: [
+      new ActionRowBuilder().addComponents(menu),
+    ],
   };
 }
+
+// ==========================================
+// STREAM APPLICATION PANEL
+// ==========================================
 
 function makeApplicationPanel() {
   const embed = makeEmbed(
@@ -210,9 +262,9 @@ function makeApplicationPanel() {
       "تريد الانضمام إلى فريق مودي ستريم في BARAKAT COMMUNITY؟",
       "",
       "اضغط على زر التقديم بالأسفل.",
-      "سيتم إرسال أسئلة التقديم إليك في الخاص (DM).",
+      "ستصلك أسئلة التقديم في الرسائل الخاصة DM.",
       "",
-      "يرجى الإجابة بوضوح وبكل مصداقية.",
+      "يرجى الإجابة بوضوح وصدق.",
       "إرسال الطلب لا يعني القبول النهائي.",
     ].join("\n")
   );
@@ -238,20 +290,24 @@ const APPLICATION_QUESTIONS = [
   "ما خبرتك السابقة في إدارة البثوث؟",
   "لماذا تريد الانضمام إلى فريق مودي ستريم؟",
   "كم ساعة تستطيع التواجد يوميًا؟",
-  "هل لديك خبرة في التعامل مع المخالفات والمشاكل أثناء البث؟ وضّح.",
+  "هل لديك خبرة في التعامل مع المخالفات أثناء البث؟ وضّح.",
 ];
 
 function makeApplicationReview(application) {
   const answers = APPLICATION_QUESTIONS.map((question, index) => {
     const answer = application.answers[index] || "لم تتم الإجابة";
-    return `**${index + 1}. ${question}**\n${answer.slice(0, 900)}`;
+
+    return (
+      `**${index + 1}. ${question}**\n` +
+      answer.slice(0, 450)
+    );
   });
 
   const embed = makeEmbed(
     "📋 طلب تقديم مودي ستريم",
     [
       `**المتقدم:** <@${application.userId}>`,
-      `**الحالة:** قيد المراجعة`,
+      "**الحالة:** قيد المراجعة",
       "",
       ...answers,
     ].join("\n\n"),
@@ -264,11 +320,13 @@ function makeApplicationReview(application) {
       .setLabel("قبول مبدئي")
       .setEmoji("✅")
       .setStyle(ButtonStyle.Success),
+
     new ButtonBuilder()
       .setCustomId(`app_reject:${application.id}`)
       .setLabel("رفض")
       .setEmoji("❌")
       .setStyle(ButtonStyle.Danger),
+
     new ButtonBuilder()
       .setCustomId(`app_pending:${application.id}`)
       .setLabel("قيد المراجعة")
@@ -276,7 +334,10 @@ function makeApplicationReview(application) {
       .setStyle(ButtonStyle.Secondary)
   );
 
-  return { embeds: [embed], components: [row] };
+  return {
+    embeds: [embed],
+    components: [row],
+  };
 }
 
 async function startApplication(interaction) {
@@ -290,7 +351,7 @@ async function startApplication(interaction) {
 
   if (existing) {
     return interaction.editReply(
-      "لديك تقديم قيد المراجعة بالفعل. يرجى انتظار رد الإدارة."
+      "لديك تقديم قيد المراجعة بالفعل. انتظر رد الإدارة."
     );
   }
 
@@ -298,17 +359,18 @@ async function startApplication(interaction) {
 
   try {
     dm = await interaction.user.createDM();
+
     await dm.send({
       embeds: [
         makeEmbed(
-          "🎥 تقديم مودي ستريم | BARAKAT COMMUNITY",
-          "سنبدأ الآن أسئلة التقديم. أجب عن كل سؤال برسالة منفصلة.\nاكتب `إلغاء` لإيقاف التقديم."
+          "🎥 تقديم مودي ستريم",
+          "أجب عن كل سؤال برسالة منفصلة.\nاكتب `إلغاء` لإيقاف التقديم."
         ),
       ],
     });
   } catch {
     return interaction.editReply(
-      "تعذر إرسال رسالة خاصة إليك. افتح الرسائل الخاصة من السيرفر، ثم جرّب مرة أخرى."
+      "تعذر إرسال رسالة خاصة إليك. افتح الرسائل الخاصة من السيرفر ثم حاول مرة أخرى."
     );
   }
 
@@ -338,9 +400,9 @@ async function startApplication(interaction) {
         errors: ["time"],
       });
 
-      const answer = collected.first().content.trim();
+      const answer = collected.first()?.content?.trim() || "";
 
-      if (answer.toLowerCase() === "إلغاء" || answer.toLowerCase() === "cancel") {
+      if (["إلغاء", "cancel"].includes(answer.toLowerCase())) {
         await dm.send("تم إلغاء التقديم.");
         return;
       }
@@ -353,11 +415,9 @@ async function startApplication(interaction) {
       answers.push(answer.slice(0, 1500));
     }
   } catch {
-    try {
-      await dm.send(
-        "انتهى وقت التقديم أو تعذر استقبال إجابتك. اضغط زر التقديم مرة أخرى للبدء من جديد."
-      );
-    } catch {}
+    await dm.send(
+      "انتهى وقت التقديم أو تعذر استقبال الإجابة. اضغط زر التقديم للبدء من جديد."
+    ).catch(() => {});
     return;
   }
 
@@ -377,80 +437,43 @@ async function startApplication(interaction) {
   saveDB();
 
   const guild = interaction.guild;
-  const category = getChannel(guild, CONFIG.APPLICATION_CATEGORY_ID);
 
-  let reviewChannel = null;
+  const reviewChannel = getChannel(
+    guild,
+    CONFIG.APPLICATION_LOG_CHANNEL_ID
+  );
 
-  try {
-    if (category && category.type === ChannelType.GuildCategory) {
-      reviewChannel = await guild.channels.create({
-        name: `تقديم-${safeName(interaction.user.username)}`,
-        type: ChannelType.GuildText,
-        parent: category.id,
-        topic: `Stream moderator application | User ID: ${interaction.user.id}`,
-        permissionOverwrites: [
-          {
-            id: guild.roles.everyone.id,
-            deny: [PermissionFlagsBits.ViewChannel],
-          },
-          {
-            id: interaction.user.id,
-            allow: [
-              PermissionFlagsBits.ViewChannel,
-              PermissionFlagsBits.ReadMessageHistory,
-            ],
-            deny: [PermissionFlagsBits.SendMessages],
-          },
-          {
-            id: client.user.id,
-            allow: [
-              PermissionFlagsBits.ViewChannel,
-              PermissionFlagsBits.SendMessages,
-              PermissionFlagsBits.ReadMessageHistory,
-              PermissionFlagsBits.EmbedLinks,
-              PermissionFlagsBits.ManageChannels,
-            ],
-          },
-        ],
-      });
-    }
-  } catch (error) {
-    console.error("Could not create application review channel:", error);
-  }
-
-  const reviewDestination =
-    reviewChannel ||
-    getChannel(guild, CONFIG.APPLICATION_LOG_CHANNEL_ID);
-
-  if (reviewDestination && reviewDestination.isTextBased()) {
+  if (reviewChannel?.isTextBased()) {
     try {
-      const message = await reviewDestination.send(
+      const message = await reviewChannel.send(
         makeApplicationReview(application)
       );
 
-      application.reviewChannelId = reviewDestination.id;
+      application.reviewChannelId = reviewChannel.id;
       application.reviewMessageId = message.id;
       saveDB();
     } catch (error) {
-      console.error("Application review send error:", error);
+      console.error("Application review error:", error.message);
     }
   }
 
-  try {
-    await dm.send(
-      "✅ تم استلام تقديمك بنجاح وإرساله إلى الإدارة للمراجعة. سنراسلك عند اتخاذ القرار."
-    );
-  } catch {}
+  await dm.send(
+    "✅ تم استلام تقديمك وإرساله للإدارة للمراجعة."
+  ).catch(() => {});
 
   await sendLog(
     guild,
     CONFIG.APPLICATION_LOG_CHANNEL_ID,
     makeEmbed(
       "📥 تم استلام تقديم جديد",
-      `المتقدم: <@${interaction.user.id}>\nرقم الطلب: \`${applicationId}\`\nالحالة: قيد المراجعة`
+      `المتقدم: <@${interaction.user.id}>\nالحالة: قيد المراجعة`
     )
   );
 }
+
+// ==========================================
+// TICKETS
+// ==========================================
 
 async function createTicket(interaction, type) {
   await interaction.deferReply({ ephemeral: true });
@@ -462,28 +485,39 @@ async function createTicket(interaction, type) {
   );
 
   if (existing) {
+    const channel = getChannel(
+      interaction.guild,
+      existing.channelId
+    );
+
     return interaction.editReply(
-      `لديك تذكرة مفتوحة بالفعل: <#${existing.channelId}>`
+      channel
+        ? `لديك تذكرة مفتوحة بالفعل: ${channel}`
+        : "لديك تذكرة مفتوحة بالفعل. تواصل مع الإدارة إذا لم تجدها."
     );
   }
 
   const guild = interaction.guild;
-  const category = getChannel(guild, CONFIG.TICKET_CATEGORY_ID);
 
-  if (!category || category.type !== ChannelType.GuildCategory) {
+  const category = getChannel(
+    guild,
+    CONFIG.TICKET_CATEGORY_ID
+  );
+
+  if (
+    !category ||
+    category.type !== ChannelType.GuildCategory
+  ) {
     return interaction.editReply(
-      "تعذر العثور على كاتيجوري التذاكر. تأكد من الـ ID وأنه Category."
+      "تعذر العثور على كاتيجوري التذاكر. راجع الـ ID."
     );
   }
-
-  const channelName =
-    `${type}-${safeName(interaction.user.username)}`.slice(0, 90);
 
   let ticketChannel;
 
   try {
     ticketChannel = await guild.channels.create({
-      name: channelName,
+      name: `${type}-${safeName(interaction.user.username)}`.slice(0, 90),
       type: ChannelType.GuildText,
       parent: category.id,
       topic: `Ticket type: ${type} | Owner ID: ${interaction.user.id}`,
@@ -525,627 +559,15 @@ async function createTicket(interaction, type) {
       ],
     });
   } catch (error) {
-    console.error("Ticket creation error:", error);
+    console.error("Ticket creation error:", error.message);
+
     return interaction.editReply(
-      "لم أستطع إنشاء التذكرة. تأكد من صلاحيات البوت وترتيب الرولات."
+      "تعذر إنشاء التذكرة. راجع صلاحيات البوت وترتيب الرولات."
     );
   }
 
-  const ticketId = `${ticketChannel.id}`;
+  const ticketId = ticketChannel.id;
 
   db.tickets[ticketId] = {
     id: ticketId,
-    channelId: ticketChannel.id,
-    userId: interaction.user.id,
-    type,
-    status: "open",
-    claimedBy: null,
-    createdAt: new Date().toISOString(),
-  };
-  saveDB();
-
-  const embed = makeEmbed(
-    `🎫 تذكرة ${ticketTypeName(type)}`,
-    [
-      `أهلًا <@${interaction.user.id}>.`,
-      `**نوع الطلب:** ${ticketTypeName(type)}`,
-      "",
-      "اكتب تفاصيل طلبك بوضوح، وسيرد عليك فريق الإدارة عند توفره.",
-      "يرجى عدم مشاركة كلمات المرور أو البيانات السرية.",
-    ].join("\n")
-  );
-
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`ticket_claim:${ticketId}`)
-      .setLabel("استلام التذكرة")
-      .setEmoji("🛠️")
-      .setStyle(ButtonStyle.Primary),
-    new ButtonBuilder()
-      .setCustomId(`ticket_close:${ticketId}`)
-      .setLabel("إغلاق التذكرة")
-      .setEmoji("🔒")
-      .setStyle(ButtonStyle.Danger)
-  );
-
-  await ticketChannel.send({
-    content: `<@${interaction.user.id}> <@&${CONFIG.TICKET_STAFF_ROLE_ID}>`,
-    embeds: [embed],
-    components: [row],
-    allowedMentions: {
-      users: [interaction.user.id],
-      roles: [CONFIG.TICKET_STAFF_ROLE_ID],
-    },
-  });
-
-  await interaction.editReply(
-    `تم فتح تذكرتك: ${ticketChannel}`
-  );
-
-  await sendLog(
-    guild,
-    CONFIG.TICKET_LOG_CHANNEL_ID,
-    makeEmbed(
-      "🎫 تم فتح تذكرة",
-      `العضو: <@${interaction.user.id}>\nالنوع: ${ticketTypeName(type)}\nالروم: ${ticketChannel}`
-    )
-  );
-}
-
-function isTicketStaff(member) {
-  return (
-    member.permissions.has(PermissionFlagsBits.Administrator) ||
-    member.roles.cache.has(CONFIG.TICKET_STAFF_ROLE_ID)
-  );
-}
-
-async function closeTicket(interaction, ticket) {
-  const staff = isTicketStaff(interaction.member);
-  const owner = interaction.user.id === ticket.userId;
-
-  if (!staff && !owner) {
-    return interaction.reply({
-      content: "لا يمكنك إغلاق هذه التذكرة.",
-      ephemeral: true,
-    });
-  }
-
-  await interaction.reply({
-    content: "🔒 سيتم إغلاق التذكرة وحفظ سجل الرسائل.",
-    ephemeral: true,
-  });
-
-  const channel = interaction.channel;
-  let transcript = `BARAKAT COMMUNITY - Ticket Transcript\n`;
-  transcript += `Ticket: ${channel.name}\n`;
-  transcript += `Owner ID: ${ticket.userId}\n`;
-  transcript += `Type: ${ticket.type}\n`;
-  transcript += `Closed by: ${interaction.user.tag}\n\n`;
-
-  try {
-    let lastId;
-
-    for (let page = 0; page < 10; page++) {
-      const options = { limit: 100 };
-      if (lastId) options.before = lastId;
-
-      const messages = await channel.messages.fetch(options);
-      if (!messages.size) break;
-
-      const sorted = [...messages.values()].sort(
-        (a, b) => a.createdTimestamp - b.createdTimestamp
-      );
-
-      for (const message of sorted) {
-        const content = message.content || "[بدون نص]";
-        const attachments = [...message.attachments.values()]
-          .map((a) => a.url)
-          .join(" ");
-
-        transcript +=
-          `[${new Date(message.createdTimestamp).toISOString()}] ` +
-          `${message.author?.tag || "Unknown"}: ${content} ${attachments}\n`;
-      }
-
-      lastId = messages.last().id;
-      if (messages.size < 100) break;
-    }
-  } catch (error) {
-    transcript += `\nTranscript collection error: ${error.message}\n`;
-  }
-
-  const logChannel = getChannel(
-    interaction.guild,
-    CONFIG.TICKET_LOG_CHANNEL_ID
-  );
-
-  if (logChannel && logChannel.isTextBased()) {
-    try {
-      await logChannel.send({
-        embeds: [
-          makeEmbed(
-            "🔒 تم إغلاق تذكرة",
-            `الروم: #${channel.name}\nصاحب التذكرة: <@${ticket.userId}>\nأغلقها: <@${interaction.user.id}>\nالنوع: ${ticketTypeName(ticket.type)}`
-          ),
-        ],
-        files: [
-          {
-            attachment: Buffer.from(transcript, "utf8"),
-            name: `transcript-${ticket.id}.txt`,
-          },
-        ],
-      });
-    } catch (error) {
-      console.error("Transcript log error:", error);
-    }
-  }
-
-  ticket.status = "closed";
-  ticket.closedAt = new Date().toISOString();
-  ticket.closedBy = interaction.user.id;
-  saveDB();
-
-  setTimeout(async () => {
-    try {
-      await channel.delete("Ticket closed");
-    } catch (error) {
-      console.error("Ticket deletion error:", error);
-    }
-  }, 5000);
-}
-
-const commands = [
-  new SlashCommandBuilder()
-    .setName("setup-panels")
-    .setDescription("إنشاء لوحات التقديم والتذاكر")
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
-].map((command) => command.toJSON());
-
-client.once("ready", async () => {
-  console.log(`Logged in as ${client.user.tag}`);
-  console.log(`${CONFIG.SERVER_NAME} bot is online.`);
-
-  try {
-    const rest = new REST({ version: "10" }).setToken(TOKEN);
-
-    await rest.put(
-      Routes.applicationCommands(client.user.id),
-      { body: commands }
-    );
-
-    console.log("Slash commands registered.");
-  } catch (error) {
-    console.error("Slash command registration error:", error);
-  }
-});
-
-// ==========================================
-// Welcome and member logs
-// ==========================================
-
-client.on("guildMemberAdd", async (member) => {
-  try {
-    const role = member.guild.roles.cache.get(CONFIG.AUTO_ROLE_ID);
-    if (role) await member.roles.add(role, "Automatic member role");
-  } catch (error) {
-    console.error("Auto-role error:", error);
-  }
-
-  const embed = makeEmbed(
-    `أهلًا بك في ${CONFIG.SERVER_NAME} 💜`,
-    [
-      `نورت السيرفر يا <@${member.id}>!`,
-      "",
-      `أنت العضو رقم **${member.guild.memberCount}**.`,
-      "نتمنى لك وقتًا ممتعًا معنا.",
-      "",
-      "يرجى قراءة القوانين والالتزام بها.",
-    ].join("\n")
-  ).setThumbnail(member.user.displayAvatarURL({ size: 256 }));
-
-  if (WELCOME_BANNER_URL) {
-    embed.setImage(WELCOME_BANNER_URL);
-  }
-
-  const welcomeChannel = getChannel(
-    member.guild,
-    CONFIG.WELCOME_CHANNEL_ID
-  );
-
-  if (welcomeChannel && welcomeChannel.isTextBased()) {
-    await welcomeChannel.send({ embeds: [embed] }).catch(console.error);
-  }
-
-  await sendLog(
-    member.guild,
-    CONFIG.MEMBER_LOG_CHANNEL_ID,
-    makeEmbed(
-      "📥 عضو جديد",
-      `العضو: ${member.user.tag}\nالمعرف: \`${member.id}\`\nعدد الأعضاء: ${member.guild.memberCount}`
-    )
-  );
-});
-
-client.on("guildMemberRemove", async (member) => {
-  await sendLog(
-    member.guild,
-    CONFIG.MEMBER_LOG_CHANNEL_ID,
-    makeEmbed(
-      "📤 مغادرة عضو",
-      `العضو: ${member.user.tag}\nالمعرف: \`${member.id}\``,
-      COLORS.danger
-    )
-  );
-});
-
-client.on("guildMemberUpdate", async (oldMember, newMember) => {
-  const oldRoles = new Set(oldMember.roles.cache.keys());
-  const newRoles = new Set(newMember.roles.cache.keys());
-
-  const added = [...newRoles].filter((id) => !oldRoles.has(id));
-  const removed = [...oldRoles].filter((id) => !newRoles.has(id));
-
-  if (!added.length && !removed.length) return;
-
-  const lines = [];
-
-  for (const id of added) lines.push(`➕ <@&${id}>`);
-  for (const id of removed) lines.push(`➖ <@&${id}>`);
-
-  await sendLog(
-    newMember.guild,
-    CONFIG.ADMIN_LOG_CHANNEL_ID,
-    makeEmbed(
-      "🛡️ تغيير رولات عضو",
-      `العضو: <@${newMember.id}>\n${lines.join("\n")}`
-    )
-  );
-});
-
-client.on("guildUpdate", async (oldGuild, newGuild) => {
-  const changes = [];
-
-  if (oldGuild.name !== newGuild.name) {
-    changes.push(`الاسم: ${oldGuild.name} → ${newGuild.name}`);
-  }
-
-  if (oldGuild.icon !== newGuild.icon) {
-    changes.push("تم تغيير أيقونة السيرفر.");
-  }
-
-  if (!changes.length) return;
-
-  await sendLog(
-    newGuild,
-    CONFIG.SERVER_LOG_CHANNEL_ID,
-    makeEmbed("⚙️ تعديل إعدادات السيرفر", changes.join("\n"))
-  );
-});
-
-client.on("messageDelete", async (message) => {
-  if (!message.guild || message.author?.bot) return;
-
-  await sendLog(
-    message.guild,
-    CONFIG.ADMIN_LOG_CHANNEL_ID,
-    makeEmbed(
-      "🗑️ رسالة محذوفة",
-      `العضو: ${message.author || "غير معروف"}\nالروم: ${message.channel}\nالمحتوى:\n${(message.content || "[لا يوجد نص]").slice(0, 1500)}`,
-      COLORS.danger
-    )
-  );
-});
-
-client.on("messageUpdate", async (oldMessage, newMessage) => {
-  if (!newMessage.guild || newMessage.author?.bot) return;
-  if (oldMessage.content === newMessage.content) return;
-
-  await sendLog(
-    newMessage.guild,
-    CONFIG.ADMIN_LOG_CHANNEL_ID,
-    makeEmbed(
-      "✏️ تعديل رسالة",
-      `العضو: ${newMessage.author}\nالروم: ${newMessage.channel}\nقبل:\n${(oldMessage.content || "[غير متاح]").slice(0, 700)}\n\nبعد:\n${(newMessage.content || "[لا يوجد نص]").slice(0, 700)}`
-    )
-  );
-});
-
-client.on("voiceStateUpdate", async (oldState, newState) => {
-  const member = newState.member || oldState.member;
-  if (!member || member.user.bot) return;
-
-  let description = "";
-
-  if (!oldState.channelId && newState.channelId) {
-    description = `دخل الروم الصوتي: <#${newState.channelId}>`;
-  } else if (oldState.channelId && !newState.channelId) {
-    description = `خرج من الروم الصوتي: <#${oldState.channelId}>`;
-  } else if (oldState.channelId !== newState.channelId) {
-    description =
-      `انتقل من <#${oldState.channelId}> إلى <#${newState.channelId}>`;
-  } else if (oldState.serverMute !== newState.serverMute) {
-    description = newState.serverMute
-      ? "تم كتمه من السيرفر."
-      : "تم إلغاء كتمه من السيرفر.";
-  } else if (oldState.serverDeaf !== newState.serverDeaf) {
-    description = newState.serverDeaf
-      ? "تم منعه من سماع الصوت من السيرفر."
-      : "تم إلغاء منعه من سماع الصوت.";
-  }
-
-  if (!description) return;
-
-  await sendLog(
-    member.guild,
-    CONFIG.VOICE_LOG_CHANNEL_ID,
-    makeEmbed("🔊 سجل صوتي", `العضو: ${member}\n${description}`)
-  );
-});
-
-// ==========================================
-// Interactions
-// ==========================================
-
-client.on("interactionCreate", async (interaction) => {
-  try {
-    if (interaction.isChatInputCommand()) {
-      if (interaction.commandName === "setup-panels") {
-        if (!interaction.guild) {
-          return interaction.reply({
-            content: "استخدم الأمر داخل السيرفر.",
-            ephemeral: true,
-          });
-        }
-
-        const appChannel = getChannel(
-          interaction.guild,
-          CONFIG.APPLICATION_PANEL_CHANNEL_ID
-        );
-        const ticketChannel = getChannel(
-          interaction.guild,
-          CONFIG.TICKET_PANEL_CHANNEL_ID
-        );
-
-        if (!appChannel?.isTextBased() || !ticketChannel?.isTextBased()) {
-          return interaction.reply({
-            content:
-              "تعذر العثور على روم لوحة التقديم أو التذاكر. تحقق من الأيديهات.",
-            ephemeral: true,
-          });
-        }
-
-        await appChannel.send(makeApplicationPanel());
-        await ticketChannel.send(makeTicketPanel());
-
-        return interaction.reply({
-          content: "تم إرسال لوحتي تقديم مودي ستريم والتذاكر بنجاح.",
-          ephemeral: true,
-        });
-      }
-    }
-
-    if (interaction.isButton()) {
-      if (interaction.customId === "stream_apply") {
-        return await startApplication(interaction);
-      }
-
-      if (interaction.customId.startsWith("app_")) {
-        const [action, applicationId] = interaction.customId.split(":");
-        const application = db.applications[applicationId];
-
-        if (!application) {
-          return interaction.reply({
-            content: "هذا الطلب غير موجود في قاعدة البيانات.",
-            ephemeral: true,
-          });
-        }
-
-        if (
-          !interaction.memberPermissions?.has(
-            PermissionFlagsBits.Administrator
-          )
-        ) {
-          return interaction.reply({
-            content: "هذا الإجراء مخصص للإدارة.",
-            ephemeral: true,
-          });
-        }
-
-        if (application.status !== "pending") {
-          return interaction.reply({
-            content: "تمت مراجعة هذا الطلب بالفعل.",
-            ephemeral: true,
-          });
-        }
-
-        if (action === "app_pending") {
-          await interaction.reply({
-            content: "الطلب ما زال قيد المراجعة.",
-            ephemeral: true,
-          });
-
-          await sendLog(
-            interaction.guild,
-            CONFIG.APPLICATION_LOG_CHANNEL_ID,
-            makeEmbed(
-              "⏳ تقديم قيد المراجعة",
-              `المتقدم: <@${application.userId}>\nالمراجع: <@${interaction.user.id}>`
-            )
-          );
-          return;
-        }
-
-        if (action === "app_accept") {
-          const member = await interaction.guild.members
-            .fetch(application.userId)
-            .catch(() => null);
-
-          if (member) {
-            await member.roles.add(
-              CONFIG.ACCEPTED_ROLE_ID,
-              "Accepted stream moderator application"
-            ).catch(console.error);
-          }
-
-          application.status = "accepted";
-          application.reviewedBy = interaction.user.id;
-          application.reviewedAt = new Date().toISOString();
-          saveDB();
-
-          await interaction.update({
-            embeds: [
-              makeEmbed(
-                "✅ تم قبول التقديم مبدئيًا",
-                `المتقدم: <@${application.userId}>\nالمراجع: <@${interaction.user.id}>`,
-                COLORS.success
-              ),
-            ],
-            components: [],
-          });
-
-          const user = await client.users
-            .fetch(application.userId)
-            .catch(() => null);
-
-          if (user) {
-            await user.send(
-              `مبروك! تم قبول تقديمك مبدئيًا في ${CONFIG.SERVER_NAME}. يرجى متابعة تعليمات الإدارة.`
-            ).catch(() => {});
-          }
-
-          await sendLog(
-            interaction.guild,
-            CONFIG.APPLICATION_LOG_CHANNEL_ID,
-            makeEmbed(
-              "✅ قبول تقديم مودي ستريم",
-              `المتقدم: <@${application.userId}>\nالمراجع: <@${interaction.user.id}>`
-            )
-          );
-
-          return;
-        }
-
-        if (action === "app_reject") {
-          application.status = "rejected";
-          application.reviewedBy = interaction.user.id;
-          application.reviewedAt = new Date().toISOString();
-          saveDB();
-
-          await interaction.update({
-            embeds: [
-              makeEmbed(
-                "❌ تم رفض التقديم",
-                `المتقدم: <@${application.userId}>\nالمراجع: <@${interaction.user.id}>`,
-                COLORS.danger
-              ),
-            ],
-            components: [],
-          });
-
-          const user = await client.users
-            .fetch(application.userId)
-            .catch(() => null);
-
-          if (user) {
-            await user.send(
-              `نشكرك على التقديم في ${CONFIG.SERVER_NAME}. نعتذر، لم يتم قبول طلبك هذه المرة. يمكنك متابعة إعلانات التقديمات القادمة.`
-            ).catch(() => {});
-          }
-
-          await sendLog(
-            interaction.guild,
-            CONFIG.APPLICATION_LOG_CHANNEL_ID,
-            makeEmbed(
-              "❌ رفض تقديم مودي ستريم",
-              `المتقدم: <@${application.userId}>\nالمراجع: <@${interaction.user.id}>`
-            )
-          );
-
-          return;
-        }
-      }
-
-      if (interaction.customId.startsWith("ticket_claim:")) {
-        const ticketId = interaction.customId.split(":")[1];
-        const ticket = db.tickets[ticketId];
-
-        if (!ticket || ticket.status !== "open") {
-          return interaction.reply({
-            content: "التذكرة غير موجودة أو مغلقة.",
-            ephemeral: true,
-          });
-        }
-
-        if (!isTicketStaff(interaction.member)) {
-          return interaction.reply({
-            content: "هذا الزر مخصص لطاقم التذاكر.",
-            ephemeral: true,
-          });
-        }
-
-        if (ticket.claimedBy) {
-          return interaction.reply({
-            content: `تم استلام التذكرة بالفعل بواسطة <@${ticket.claimedBy}>.`,
-            ephemeral: true,
-          });
-        }
-
-        ticket.claimedBy = interaction.user.id;
-        saveDB();
-
-        await interaction.reply({
-          content: `🛠️ استلم <@${interaction.user.id}> هذه التذكرة.`,
-        });
-
-        await sendLog(
-          interaction.guild,
-          CONFIG.TICKET_LOG_CHANNEL_ID,
-          makeEmbed(
-            "🛠️ تم استلام تذكرة",
-            `التذكرة: ${interaction.channel}\nالموظف: <@${interaction.user.id}>`
-          )
-        );
-        return;
-      }
-
-      if (interaction.customId.startsWith("ticket_close:")) {
-        const ticketId = interaction.customId.split(":")[1];
-        const ticket = db.tickets[ticketId];
-
-        if (!ticket || ticket.status !== "open") {
-          return interaction.reply({
-            content: "التذكرة غير موجودة أو مغلقة.",
-            ephemeral: true,
-          });
-        }
-
-        return await closeTicket(interaction, ticket);
-      }
-    }
-
-    if (interaction.isStringSelectMenu()) {
-      if (interaction.customId === "ticket_create") {
-        return await createTicket(interaction, interaction.values[0]);
-      }
-    }
-  } catch (error) {
-    console.error("Interaction error:", error);
-
-    if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
-      await interaction.reply({
-        content: "حدث خطأ أثناء تنفيذ الأمر. تحقق من صلاحيات البوت واللوجات.",
-        ephemeral: true,
-      }).catch(() => {});
-    }
-  }
-});
-
-process.on("unhandledRejection", (error) => {
-  console.error("Unhandled rejection:", error);
-});
-
-process.on("uncaughtException", (error) => {
-  console.error("Uncaught exception:", error);
-});
-
-client.login(TOKEN);
+    channelId:
