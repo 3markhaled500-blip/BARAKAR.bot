@@ -1,3 +1,4 @@
+
 {
   "name": "barakat-community-bot",
   "version": "1.0.0",
@@ -5,7 +6,11 @@
   "scripts": {
     "start": "node index.js"
   },
+  "engines": {
+    "node": "22.x"
+  },
+  "packageManager": "npm@10.9.2",
   "dependencies": {
-    "discord.js": "^14.22.1"
+    "discord.js": "^14.19.3"
   }
 }
